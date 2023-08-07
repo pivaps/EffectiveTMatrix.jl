@@ -1,12 +1,12 @@
 # Return matrix of computed coefficients a col corresponds to a configuration
 
  # not sure this function is needed here? (only appears in the naive method apparently)
-function mode_source(N::Int,dim::Int=2)
+function mode_source(medium::Acoustic{T,2},N::Int) where T <: AbstractFloat
     coeffs = complex(zeros(2abs(N)+1))
     N<0 ? coeffs[1] = 1.0+0.0im : coeffs[end] = 1.0+0.0im
-    return regular_spherical_source(host_medium, coeffs; 
-        position = zeros(dim),
-        symmetry = (N==0) ? RadialSymmetry{dim}() : WithoutSymmetry{dim}()
+    return regular_spherical_source(medium, coeffs; 
+        position = zeros(2),
+        symmetry = (N==0) ? RadialSymmetry{2}() : WithoutSymmetry{2}()
         );
 end
 

@@ -14,8 +14,9 @@ export MonteCarloResultTemp,MonteCarloResult,save,MC_read
 # Plots
 export plot
 
+using Reexport
+@reexport using EffectiveWaves
 
-using EffectiveWaves
 using SpecialFunctions
 using Statistics
 using LinearAlgebra 

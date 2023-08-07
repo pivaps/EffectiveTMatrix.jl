@@ -12,8 +12,8 @@ function t_matrix(
 end
 
 
-function effective_sphere_wavenumber(ω::Number,sps::Species,outer_medium::Acoustic{T,2};
-    radius_big_cylinder=10.0::Float64,basis_order=10::Int) where {T,P}
+function effective_sphere_wavenumber(ω::Number,sps::Species,outer_medium::Acoustic{T,dim};
+    radius_big_cylinder=10.0::Float64,basis_order=10::Int) where {T,dim}
 
     micro = Microstructure(outer_medium,sps);
     material = Material(Circle(radius_big_cylinder),micro);
@@ -32,7 +32,7 @@ function effective_sphere_wavenumber(ω::Number,sps::Species,outer_medium::Acous
    );
    
    rsource = regular_spherical_source(outer_medium, [1.0+0.0im];
-   position = zeros(dimension), symmetry = RadialSymmetry{dimension}()
+   position = zeros(dim), symmetry = RadialSymmetry{dim}()
    );
 
    wavemode = WaveMode(ω, kstar, rsource, material;kws...);

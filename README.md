@@ -33,8 +33,8 @@ plot(source,ω;bounds=region,res=100)
     <img
     src="examples/source_mode_0.png"
     alt="Alt text"
-    title="Particles configuration"
-    style="display: inline-block; margin: 0 auto; max-width: 400px">
+    title=""
+    style="display: inline-block; margin: 0 auto; max-width: 200px">
 </p>
 
 ### Scattering from one configuration of particles
@@ -67,7 +67,7 @@ plot(particles_realisation)
     src="examples/particles_configuration.png"
     alt="Alt text"
     title="Particles configuration"
-    style="display: inline-block; margin: 0 auto; max-width: 400px">
+    style="display: inline-block; margin: 0 auto; max-width: 200px">
 </p>
 
 
@@ -86,8 +86,8 @@ plot(scattered_field,ω; field_apply=real,seriestype = :contour,c=:balance)
     <img
     src="examples/scattering_mode_0.png"
     alt="Alt text"
-    title="Particles configuration"
-    style="display: inline-block; margin: 0 auto; max-width: 400px">
+    title=""
+    style="display: inline-block; margin: 0 auto; max-width: 200px">
 </p>
 
 The Scattered field can be decomposed in modes $\mathrm U_n$ defined by 
@@ -114,11 +114,64 @@ scatter(0:basis_field_order,abs.(F1),label=false,markerstrokewidth=.5,markersize
     <img
     src="examples/deterministic_modal_decomposition_mode_0.png"
     alt="Alt text"
-    title="Particles configuration"
-    style="display: inline-block; margin: 0 auto; max-width: 400px">
+    title=""
+    style="display: inline-block; margin: 0 auto; max-width: 200px">
 </p>
 
 ### Average scattered field over particles configurations
+
+The previous steps can be repeated in order to compute the averaged scattered field over several particles configurations, denoted $\langle u_s \rangle(\mathbf{r})$. 
+
+$$\langle u_s \rangle(\mathbf{r}) =  \sum_{n=-\infty}^{+\infty} \langle \mathfrak{F}_n\rangle \mathrm U_n(k\mathbf{r})$$
+
+The averaged scattered field is computed as follows:
+
+```julia 
+x_vec, _ = points_in_shape(region;resolution=res);                            # space discretization 
+nb_of_configurations = 200;
+A = complex(zeros(length(x_vec),nb_of_configurations));                       # store the fields of each configurations
+@time Threads.@threads for i=1:nb_of_configurations
+    particles = renew_particle_configurations(sp_MC,radius_big_cylinder);
+    sim = FrequencySimulation(particles,source);
+    us = run(sim,x_vec,[ω];only_scattered_waves=true,basis_order=basis_order)
+    A[:,i] = mean.(us.field[:,1]) 
+end 
+mean_A  = mean(A,dims=2);
+mean_us = FrequencySimulationResult(mean_A,x_vec,[ω]);
+plot(mean_us,ω; field_apply=real,seriestype = :contour,c=:balance) 
+```
+
+<p align="center">
+    <img
+    src="examples/mean_us_mode_0.png"
+    alt="Alt text"
+    title=""
+    style="display: inline-block; margin: 0 auto; max-width: 200px">
+</p>
+
+
+The empirical average of $\langle \mathfrak{F}_n\rangle$ obtained with 200 configurations is computed by
+
+```julia 
+F2 = mode_analysis(mode, ω, host_medium, sp_MC;
+                radius_big_cylinder=radius_big_cylinder, 
+                basis_order=basis_order, 
+                basis_field_order=basis_field_order,
+                nb_iterations=nb_of_configurations);
+
+scatter(0:basis_field_order,abs.(F2),label=false,markerstrokewidth=.5,markersize=7,markershape=:dtriangle)
+scatter!(xlabel="n",ylabel=L"$\langle\mathfrak{F}_n\rangle$")
+scatter!(title="modes for one $(nb_of_configurations) realisations")
+```
+
+
+<p align="center">
+    <img
+    src="examples/average_modal_decomposition_mode_0.png"
+    alt="Alt text"
+    title=""
+    style="display: inline-block; margin: 0 auto; max-width: 200px">
+</p>
 
 
 

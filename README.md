@@ -1,6 +1,11 @@
 # EffectiveTMatrix.jl
 A Julia library for computing the effective T-matrix of a random particulate sphere or cylinder.
 
+[![Build status (Github Actions)](https://github.com/Kevish-Napal/EffectiveTMatrix.jl/workflows/CI/badge.svg)](https://github.com/Kevish-Napal/EffectiveTMatrix.jl/actions)
+
+[![codecov.io](http://codecov.io/github/Kevish-Napal/EffectiveTMatrix.jl/coverage.svg?branch=main)](http://codecov.io/github/Kevish-Napal/EffectiveTMatrix.jl?branch=main)
+
+
 The maths is briefly explained here through the examples. More details will be available soon in an upcoming publication. 
 
 ## I) Introduction: The mode to mode scattering in a 2D setting

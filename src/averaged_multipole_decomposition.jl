@@ -145,7 +145,7 @@ function naive_sample_effective_t_matrix(ω::Number, host_medium::PhysicalMedium
     x = 1.5*radius_big_cylinder
    
     for mode=0:basis_field_order
-       source = mode_source(mode)
+       source = mode_source(host_medium,mode)
        for _ = 1:nb_iterations
         particles = renew_particle_configurations(sp,radius_big_cylinder)
         sim = FrequencySimulation(particles,source);
@@ -164,7 +164,7 @@ function mode_analysis(input_mode::Int, ω::Number, host_medium::PhysicalMedium,
     nb_iterations=1000::Int) 
 
     k = ω/host_medium.c
-    source = mode_source(input_mode)
+    source = mode_source(host_medium,input_mode)
 
     function kernel_V(n,particles)
         V = complex(zeros(2*basis_order+1,length(particles)))
@@ -183,7 +183,7 @@ function mode_analysis(input_mode::Int, ω::Number, host_medium::PhysicalMedium,
         F0[:,iter] = [sum(kernel_V(n,particles).*scattering_coefficients) for n = 0:basis_field_order]
     end
     
-    return [F0[n,:] for n = 1:basis_field_order+1]
+    return mean.([F0[n,:] for n = 1:basis_field_order+1])
 end
 
 # Very similar to the function above, however we only compute the mode that is not supposed to vanish.
@@ -193,7 +193,7 @@ function optimal1_mode_analysis(input_mode::Int, ω::Number, host_medium::Physic
     radius_big_cylinder=10.0::Float64, basis_order=3::Int, nb_iterations=1000::Int) 
 
     k = ω/host_medium.c
-    source = mode_source(input_mode)
+    source = mode_source(host_medium,input_mode)
 
     F = ComplexF64[]
     for _ = 1:nb_iterations

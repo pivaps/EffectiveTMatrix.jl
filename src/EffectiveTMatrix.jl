@@ -6,7 +6,7 @@ sample_effective_t_matrix,naive_sample_effective_t_matrix,mode_analysis,
 optimal1_mode_analysis,optimal2_mode_analysis,sp_MC_to_EF,generate_species
 
 # EffectiveSphere
-export t_matrix,effective_sphere_wavenumber,t_matrix_num_denom,effective_T_matrices
+export t_matrix # ,effective_sphere_wavenumber,t_matrix_num_denom,effective_T_matrices
 
 # MonteCarloResult
 export MonteCarloResultTemp,MonteCarloResult,save,MC_read

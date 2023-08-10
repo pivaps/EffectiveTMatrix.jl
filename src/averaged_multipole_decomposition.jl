@@ -41,8 +41,8 @@ function run_MC_validation(host_medium::PhysicalMedium{Dim}, list_params::Vector
 
     MC_vec = Vector{MonteCarloResult}();
     for params in list_params
-        # realisations of Monte Carlo simulations F and statistics (μ, σ, nb_iterations)
-        F, μ, σ, nb_iterations = sample_effective_t_matrix(host_medium, params; basis_order, basis_field_order, kws...);
+        #  statistics of Monte Carlo simulations (μ=mean, σ=variance, nb_iterations)
+        μ, σ, nb_iterations = sample_effective_t_matrix(host_medium, params; basis_order, basis_field_order, kws...);
         
         # Effective method
         micro = Microstructure(host_medium,params.sps_MC);
@@ -183,7 +183,7 @@ function sample_effective_t_matrix(host_medium::PhysicalMedium{Dim}, params::Mon
     σ = [std(real.(F[N]);mean=real(μ[N])) + im*std(imag.(F[N]);mean=imag(μ[N])) for N=1:initial_basis_field_order+1];
     nb_iterations = length.(F);
     
-    return F, μ, σ, nb_iterations
+    return μ, σ, nb_iterations
 end
 
 

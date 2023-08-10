@@ -10,7 +10,7 @@ function mode_source(medium::Acoustic{T,2},N::Int) where T <: AbstractFloat
         );
 end
 
-
+# this function handles Spheres containing only one type of specie 
 function renew_particle_configurations(sp::Specie,radius_big_cylinder::Float64)
     config = random_particles(
         sp.particle.medium,
@@ -21,6 +21,46 @@ function renew_particle_configurations(sp::Specie,radius_big_cylinder::Float64)
     config = config[norm.(origin.(config)) .< radius_big_cylinder .- outer_radius.(config)]
 end
 
+function run_MC_validation(ω::Number, host_medium::PhysicalMedium, material::ParticulateSphere; kws...) 
+    params = MonteCarloParameters(ω,material.microstructure.species,radius(material));
+    return run_MC_validation(host_medium, params; kws...);
+end
+
+function run_MC_validation(Ω::Vector{Float64}, host_medium::PhysicalMedium, material::ParticulateSphere; kws...) 
+    params = [MonteCarloParameters(ω,material.microstructure.species,radius(material)) for ω in Ω];
+    return run_MC_validation(host_medium, params; kws...);
+end
+
+function run_MC_validation(host_medium::PhysicalMedium{Dim}, params::MonteCarloParameters{T,Dim}; kws...) where {T,Dim}
+    return run_MC_validation(host_medium, [params]; kws...)[1];
+end
+
+# main function for run_MC_validation
+function run_MC_validation(host_medium::PhysicalMedium{Dim}, list_params::Vector{MonteCarloParameters{T,Dim}};
+    save_data=true, save_realisations=false, description="No description given", basis_order::Int=10, basis_field_order::Int=0, kws...) where {T,Dim}
+
+    MC_vec = Vector{MonteCarloResult}();
+    for params in list_params
+        # realisations of Monte Carlo simulations F and statistics (μ, σ, nb_iterations)
+        F, μ, σ, nb_iterations = sample_effective_t_matrix(host_medium, params; basis_order, basis_field_order, kws...);
+        
+        # Effective method
+        micro = Microstructure(host_medium,params.sps_MC);
+        material = Material(Sphere{T,Dim}(zeros(Dim),params.R),micro);
+        μ = t_matrix(params.ω, host_medium, material, basis_order, basis_field_order)[basis_field_order+1:2basis_field_order+1];
+        # Monopole approximation of the T matrix
+        μ0 = t_matrix(params.ω, host_medium, material, 0, basis_field_order)[basis_field_order+1:2basis_field_order+1];
+
+        push!(MC_vec,
+                MonteCarloResult(basis_order,basis_field_order,params.ω,params.sps_MC[1],params.R,μ,σ,nb_iterations,μ,μ0)
+        )
+    end
+
+    if save_data | save_realisations
+        save(MC_vec,description)
+    end
+    return MC_vec
+end
 
 """
     sample_effective_t_matrix(ω::Number, host_medium::PhysicalMedium, sp::Specie, select_modes::Vector{Bool};kws...)
@@ -36,13 +76,19 @@ in [0; basis_field_order]
 # Finally the stop criteria of computing each modes are set independently (this is why basis_field_order is updated after 
 # each loops). I still need to check if this is required or not, for the moment it is difficult to set a convergence criteria. 
 # note that a mode is assumed to be zero as soon as smaller than 1e-8, the code then stops iterating on this mode.
-function sample_effective_t_matrix(ω::Number, host_medium::PhysicalMedium, sp::Specie;
-    radius_big_cylinder=10.0::Float64, basis_order=10::Int, basis_field_order=0::Int,
-    nb_iterations_max=5000::Int,nb_iterations_step=200::Int,prec=1e-1::Float64) 
+# Monte Carlo Simulation for the acoustic cylinder
+function sample_effective_t_matrix(host_medium::PhysicalMedium{Dim}, params::MonteCarloParameters{T,Dim};
+    basis_order::Int, basis_field_order::Int,
+    nb_iterations_max=5000::Int,nb_iterations_step=200::Int,prec=1e-1::Float64) where {T,Dim}
 
+    ω = params.ω
+    sps_MC = params.sps_MC
+    radius_big_cylinder = params.R
+
+    
     k = ω/host_medium.c
     # Precompute T-matrices for these particles
-    t_matrix = get_t_matrices(host_medium, [sp.particle], ω, basis_order)[1]
+    t_matrix = get_t_matrices(host_medium, [sp.particle for sp in sps_MC], ω, basis_order)[1]
 
     # We need this big vector F to store realisation of each modes 
     # which convergent rate my differ
@@ -77,7 +123,8 @@ function sample_effective_t_matrix(ω::Number, host_medium::PhysicalMedium, sp::
     while continue_crit()
         for _ in 1:nb_iterations_step
 
-            particles = renew_particle_configurations(sp,radius_big_cylinder)
+            # note sps_MC[1] in renew_particle_configurations - the latter function only takes into account one type of sp for now
+            particles = renew_particle_configurations(sps_MC[1],radius_big_cylinder)
             rθ = [cartesian_to_radial_coordinates(origin(p)) for p in particles]
             n_particles = length(particles)
 
@@ -132,7 +179,11 @@ function sample_effective_t_matrix(ω::Number, host_medium::PhysicalMedium, sp::
         println("modes still running:", select_modes,"\n")
     end # while
 
-    return F
+    μ = mean.(F)
+    σ = [std(real.(F[N]);mean=real(μ[N])) + im*std(imag.(F[N]);mean=imag(μ[N])) for N=1:initial_basis_field_order+1];
+    nb_iterations = length.(F);
+    
+    return F, μ, σ, nb_iterations
 end
 
 
@@ -261,16 +312,3 @@ function generate_species(radius_big_cylinder::Float64,particle::Particle,ϕ::Fl
 
     return sp_MC, sp_EF
 end
-
-# ## for Plots
-
-# function twiny(sp::Plots.Subplot)
-#     sp[:top_margin] = max(sp[:top_margin], 30Plots.px)
-#     plot!(sp.plt, inset = (sp[:subplot_index], bbox(0,0,1,1)))
-#     twinsp = sp.plt.subplots[end]
-#     twinsp[:xaxis][:mirror] = true
-#     twinsp[:background_color_inside] = RGBA{Float64}(0,0,0,0)
-#     Plots.link_axes!(sp[:yaxis], twinsp[:yaxis])
-#     twinsp
-# end
-# twiny(plt::Plots.Plot = current()) = twiny(plt[1])

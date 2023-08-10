@@ -38,6 +38,16 @@ mutable struct MonteCarloResultTemp
     end
 end
 
+struct MonteCarloParameters{T,Dim}
+    ω::T
+    sps_MC::Species{Dim}
+    R::T
+
+    function MonteCarloParameters(ω::T, sps_MC::Species{Dim}, R::T) where {T,Dim}
+        new{T,Dim}(ω,sps_MC,R)
+    end
+end
+
 mutable struct MonteCarloResult
     basis_order::Int64
     basis_field_order::Int64

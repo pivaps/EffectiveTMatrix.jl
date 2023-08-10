@@ -1,9 +1,9 @@
 ## ParticulateSphere is a specific alias of the type Material defined in EffectiveWaves.jl
 
-ParticulateSphere{T,Dim} = Material{Sphere{T,Dim},M} where M <: ParticulateMicrostructure{Dim}
+ParticulateSphere{T,Dim,P,Sps} = Material{Sphere{T,Dim},M} where M <: ParticulateMicrostructure{Dim,P,Sps}
 ParticulateCylinder{T} = ParticulateSphere{T,2}
 
-
+radius(sphere::ParticulateSphere) = sphere.shape.radius;
 
 function t_matrix(ω::AbstractFloat, host_medium::PhysicalMedium, material::ParticulateSphere, basis_order::Integer, basis_field_order::Integer)
 
@@ -19,13 +19,15 @@ end
 function solve_eigensystem(ω::AbstractFloat, 
     host_medium::Acoustic{T,dim}, material::ParticulateSphere{T,dim}; basis_order=10::Integer) where {T,dim}
     
+    sp_EF = sp_MC_to_EF(material.microstructure.species[1],material.shape.radius)
+    
     opts = Dict(
        :tol => 1e-4, 
        :num_wavenumbers => 1
        ,:basis_order => basis_order
    );
    
-   kstar = wavenumbers(ω,material.microstructure;opts...)[1]
+   kstar = wavenumbers(ω,host_medium, sp_EF;opts...)[1]
 
    kws = Dict(
        :basis_order => basis_order

@@ -12,11 +12,11 @@ source = mode_source(host_medium,mode);
 
 ## set frequency and define where to plot 
 ω = .1;
-M=N=40;
-res=100;
-bottomleft = [-M;-N]; topright = [M;N];
-region = Box([bottomleft, topright]);
-plot(source,ω;bounds=region,res=res)
+    M=N=40;
+    res=100;
+    bottomleft = [-M;-N]; topright = [M;N];
+    region = Box([bottomleft, topright]);
+    plot(source,ω;bounds=region,res=res)
 # savefig("source_mode_"*string(mode)*".png")
 
 ## parameters for particles configurations

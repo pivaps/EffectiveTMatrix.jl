@@ -1,7 +1,7 @@
 module EffectiveTMatrix
 
 # EffectiveSphere
-export ParticulateSphere, t_matrix, average_scattered_field
+export EffectiveParticle, ParticulateSphere, t_matrix, average_scattered_field
 
 # MonteCarloResult
 export MonteCarloParameters, MonteCarloResult, run_MC_validation, MonteCarloResultTemp, save, MC_read

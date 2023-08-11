@@ -5,6 +5,26 @@ ParticulateCylinder{T} = ParticulateSphere{T,2}
 
 radius(sphere::ParticulateSphere) = sphere.shape.radius;
 
+
+
+# struct EffectiveParticle{T,M<:Microstructure} where T
+#     radius::T
+#     microstructure::M
+#     function EffectiveParticle{M}(radius::T,micro::M) where {T,M <: Microstructure}
+#         new{T,M}(radius,micro)
+#     end
+# end
+
+
+
+# import EffectiveWaves: shape
+
+# function shape(p::EffectiveParticle{T,Dim}) where {T,Dim}
+#     Sphere{T,Dim}(p.radius) 
+# end
+
+
+
 function t_matrix(ω::AbstractFloat, host_medium::PhysicalMedium, material::ParticulateSphere; basis_order=10::Integer, basis_field_order=10::Integer)
 
     kstar, wavemode = solve_eigensystem(ω, host_medium, material; basis_order=basis_order);

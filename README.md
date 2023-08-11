@@ -41,14 +41,14 @@ Then the averaged scattered field $\langle u_s\rangle$ (over all possible config
 
 $$
 \tag{2}
-\langle u_s\rangle(\mathbf r) =  \sum_{n=-\infty}^{+\infty}\mathfrak F_n\mathrm H_n(k\mathbf r), \quad \mathfrak F_n := \mathrm T_ng_n
+\langle u_s\rangle(\mathbf r) =  \sum_{n=-\infty}^{+\infty}\mathfrak F_n\mathrm H_n(k\mathbf r), \quad \mathfrak F_n = \mathrm T_ng_n
 $$
 
-where $\mathrm T_n$ is related to the effective T-matrix $\mathrm T_{n,m}$ of the effective cylinder of radius $R$. More precisely,
+where $\mathrm T_n\in\mathbb{C}$ is related to the effective T-matrix $\mathrm T_{n,m}$ of the effective cylinder of radius $R$. More precisely,
 
 $$
 \tag{3}
-\mathrm T_{n,m} = \delta_{n,m} \mathrm T_n.
+\mathrm T_{n,m} := \delta_{n,m} \mathrm T_n.
 $$
 
 With this definition, the scattering from the effective cylinder of radius $R$ can be summerized in matrix form 
@@ -74,7 +74,78 @@ where we defined the vectors $\mathbf{\mathfrak{F}}=(\mathfrak F_n)_n$ and $\mat
 
 ### Demo 1: Computation of the coefficients $\mathrm T_n$ 
 
-cf examples/plane_wave_scattering/plane_wave_scattering.jl
+*cf. examples/plane_wave_scattering/plane_wave_scattering.jl*
+
+First set the dimension and physics of the problem by defining the host medium:
+
+```julia
+# 2D acoustic problem
+dimension=2;                               
+host_medium = Acoustic(dimension; ρ=1.0, c=1.0);
+```
+
+We consider a random particulate cylinder made of sound hard particles of radius 1.0. We also need to choose the volume fraction (density of particles). These information are stored in sp_MC:
+
+```julia
+## particulate microstructure of the effective cylinder
+particle = Particle(Acoustic(dimension; ρ=Inf, c=Inf),Circle(1.0)); # sound hard particles of radius 1.0 
+sp_MC = Specie(particle; volume_fraction = .4) 
+```
+
+Finally, the cylinder is defined by it's radius and microstructure, ie an homogeneous material with the particles previously defined. For now, the homogeneous material has to be the same as the one of the host material:
+
+```julia
+## define the effective cylinder
+cylinder_radius = 20.0;
+microstructure = Microstructure(host_medium,[sp_MC]);
+cylinder = Material(Circle(cylinder_radius),microstructure);
+```
+
+To compute the coefficients $\mathrm T_n$ of the effective T-matrix, we need to specify the frequency $\omega$ and the number of coefficients to compute:
+
+```julia
+## compute the coefficients of the T-matrix 
+ω = .2; # frequency
+N = 5;  # Tₙ for n ∈ [-N,N]
+T = t_matrix(ω, host_medium, cylinder, basis_field_order=N);
+```
+
+<p align="center">
+    <img
+    src="examples/plane_wave_scattering/T-matrix.png"
+    alt="Alt text"
+    title=""
+    style="display: inline-block; margin: 0 auto; max-width: 200px">
+</p>
+
+
+The computation of the T-matrix uses the Effective Waves Method and is relatively fast. In Demo 2, we show how these results are validated with Monte Carlo simulations. 
+
+Once these coefficients are computed, the scattering from any incident field can be computed by using the decomposition (1) of the incident field and formula (2) for the scattered field. Below is an example for computing the average pressure field resulting from an incident plane wave:
+
+```julia
+# Define the incident plane wave
+psource = plane_source(host_medium; direction = [1.0,0.0]);
+
+# Define box where to compute the average scattered field 
+P=Q=4*cylinder_radius;                   # bounding box size
+bottomleft = [-P;-Q]; topright = [P;Q];
+region = Box([bottomleft, topright]);    # bounding box
+
+us = average_scattered_field(ω, region, psource, cylinder; basis_field_order=N);
+plot(us,ω; field_apply=real,seriestype = :contour,c=:balance) 
+plot!(title="average pressure field")
+```
+
+
+<p align="center">
+    <img
+    src="examples/plane_wave_scattering/plane_wave_scattering.png"
+    alt="Alt text"
+    title=""
+    style="display: inline-block; margin: 0 auto; max-width: 200px">
+</p>
+
 
 ### Demo 2: Monte Carlo validation of the coefficients $\mathrm T_n$ 
 
@@ -254,26 +325,3 @@ scatter!(title="modes for one $(nb_of_configurations) realisations")
     title=""
     style="display: inline-block; margin: 0 auto; max-width: 200px">
 </p>
-
-
-
-## II) The effective T-matrix 
-
-After ensemble averaging over particle configurations within a cylindrical region the system inherits cylindrical symmetry. 
-For example, if the source has radial symmetry then the average scattered field will also have radial symmetry. This is also true for sources 
-with more general rotational symmetry resulting in scattered fields of the same rotational symmetry.
-
-If we respectively denote by $\mathrm V_n$ and $\mathrm U_n$ the incident and scattered modes of order $n$, then they are linearly related by some 
-complex number $\mathrm T_n$ as follows:
-
-$$
-   \mathrm  U_n = \mathrm T_n \mathrm V_n,\quad \mathrm T_n\in \mathbb{C},
-$$
-
-where  only depends on the properties of the random material, such as it's radius and constitutive particles. Since the scattering 
-problem is linear, the knowledge of the $\mathrm T_n$ allows to describe the scattering from any incident field, after decomposing the latter into 
-the modes $\mathrm V_n$.
-
-This library computes $\mathrm T_n$, provided the particles types and the material radius by using a 
-We do so by using the effective wave method approach \cite{gower2021effective}. Finally, we show that it is possible to
-improve the rate of convergence of Monte Carlo simulations thanks to the cylindrical symmetry. We use the latter to validate our results.

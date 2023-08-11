@@ -9,8 +9,7 @@ host_medium = Acoustic(dimension; ρ=1.0, c=1.0);
 ## particulate microstructure of the effective cylinder
 particle = Particle(Acoustic(2; ρ=Inf, c=Inf),Circle(1.0));   # sound hard particles of radius 1.0 
 ϕ = 0.4;                                                      # density of particles
-separation_ratio = 1.001;                                     # minimum distance between particles
-sp_MC = Specie(particle; volume_fraction = ϕ,separation_ratio=separation_ratio) 
+sp_MC = Specie(particle; volume_fraction = ϕ) 
 micro = Microstructure(host_medium,[sp_MC]);
 
 ## define the effective cylinder
@@ -26,7 +25,7 @@ T = t_matrix(ω, host_medium, cylinder, basis_field_order=N);
 scatter(0:N,real.(T[N+1:2N+1]),label=L"$\mathrm{Re\,(T}_n)$")
 scatter!(0:N,imag.(T[N+1:2N+1]),label=L"$\mathrm{Im\,(T}_n)$")
 scatter!(title="Effective T-matrix diagonal terms", xlabel=L"$n$", ylabel=L"$\mathrm{T}_n$")
-# savefig("T-matrix.png")
+savefig("T-matrix.png")
 
 ## average scattered field from incident plane wave
 # define the plane wave
@@ -39,7 +38,8 @@ region = Box([bottomleft, topright]);    # bounding box
 
 us = average_scattered_field(ω, region, psource, cylinder; basis_field_order=N);
 plot(us,ω; field_apply=real,seriestype = :contour,c=:balance) 
-# savefig("plane_wave_scattering.png")
+plot!(title="average pressure field")
+savefig("plane_wave_scattering.png")
 
 
 

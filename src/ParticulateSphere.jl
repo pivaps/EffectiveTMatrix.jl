@@ -43,34 +43,6 @@ function solve_eigensystem(ω::AbstractFloat,
    return kstar, wavemode
 end 
 
-# function effective_sphere_wavenumber(ω::Number,sps::Species,outer_medium::Acoustic{T,dim};
-#     radius_big_cylinder=10.0::Float64,basis_order=10::Int) where {T,dim}
-
-#     micro = Microstructure(outer_medium,sps);
-#     material = Material(Circle(radius_big_cylinder),micro);
-
-#     opts = Dict(
-#        :tol => 1e-4, 
-#        :num_wavenumbers => 1
-#        ,:basis_order => basis_order
-#    );
-   
-#    kstar = wavenumbers(ω,micro;opts...)[1]
-
-#    kws = Dict(
-#        :basis_order => basis_order
-#        ,:tol=>1e-2
-#    );
-   
-#    rsource = regular_spherical_source(outer_medium, [1.0+0.0im];
-#    position = zeros(dim), symmetry = RadialSymmetry{dim}()
-#    );
-
-#    wavemode = WaveMode(ω, kstar, rsource, material;kws...);
-
-#    return kstar, wavemode
-# end 
-
 function t_matrix_num_denom(kstar,wavemode;basis_field_order)
     
     material = wavemode.material
@@ -119,32 +91,28 @@ function t_matrix_num_denom(kstar,wavemode;basis_field_order)
     return Matrix_Num, Matrix_Denom
 end
 
-# T-matrix is - Matrix_Num/Matrix_Denom
-# function t_matrix(ω::T,effective_cylinder::Material,outer_medium::Acoustic{T,2};
-#     basis_order=10::Integer,basis_field_order=10::Integer,include_terms=basis_order::Int) where T <: AbstractFloat
+function average_scattered_field(ω::AbstractFloat, x_vec::Vector{V}, source::AbstractSource{P}, material::ParticulateSphere{T,Dim},
+     basis_order::Integer, basis_field_order::Integer) where {T,Dim,P<:PhysicalMedium{Dim},V <: AbstractArray{T}}
 
-#     radius_big_cylinder = effective_cylinder.shape.radius
-#     micro = effective_cylinder.microstructure
-#     species = micro.species
+    T_matrix =  t_matrix(ω, source.medium, material, basis_order, basis_field_order)
+    source_coefficient = regular_spherical_coefficients(source)
+    G = source_coefficient(basis_field_order,zeros(Dim),ω)
 
-#     kstar, wavemode =  effective_sphere_wavenumber(ω,species,outer_medium ;
-#     basis_order= basis_order,radius_big_cylinder=radius_big_cylinder)
+    println(length(T_matrix))
+    N = basislength_to_basisorder(P,length(G))
+    basis = outgoing_basis_function(source.medium, ω)
 
-#     N, D = t_matrix_num_denom(kstar,wavemode;basis_field_order = basis_field_order)
+    function us(x)
+        sum(G.* T_matrix.* basis(N, x))
+    end
 
-#     return - vec(sum(N[basis_order+1-include_terms:basis_order+1+include_terms,:],dims=1) ./ sum(D[basis_order+1-include_terms:basis_order+1+include_terms,:],dims=1))
-# end
+    utot = map(x_vec) do x
+        if sqrt(x'*x) > radius(material)
+            field(source)(x,ω) + us(x)
+        else
+            .0+.0im # unknown for now
+        end
+    end
 
-
-# function effective_T_matrices(ω,host_medium,sps_EF;radius_big_cylinder,basis_order,basis_field_order)
-
-#     kstar, wavemode = effective_sphere_wavenumber(ω,sps_EF,host_medium;
-#                 radius_big_cylinder=radius_big_cylinder, basis_order=basis_order);
-
-#     N,D = t_matrix_num_denom(kstar,wavemode;basis_field_order=basis_field_order);
-
-#     T =  (- vec(sum(N,dims=1)./sum(D,dims=1)))
-#     T0 = (- N[1+basis_order,:]./D[1+basis_order,:])
-
-#     return T, T0
-# end
+    return FrequencySimulationResult(utot,x_vec,[ω])
+end

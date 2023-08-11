@@ -6,9 +6,86 @@ A Julia library for computing the effective T-matrix of a random particulate sph
 [![codecov.io](http://codecov.io/github/Kevish-Napal/EffectiveTMatrix.jl/coverage.svg?branch=main)](http://codecov.io/github/Kevish-Napal/EffectiveTMatrix.jl?branch=main)
 
 
-The maths is briefly explained here through the examples. More details will be available soon in an upcoming publication. 
+## Installation
 
-## I) Introduction: The mode to mode scattering in a 2D setting
+[Install Julia v1.6.1 or later](https://julialang.org/downloads/) then run in the Julia REPL:
+
+```julia
+using Pkg
+Pkg.add https://github.com/Kevish-Napal/EffectiveTMatrix.jl.git
+```
+
+The maths is briefly explained below through examples. More details will be available soon in an upcoming publication. 
+
+## The acoustic  particulate cylinder
+
+### A  bit of the underlying maths
+The propagation of waves in free space is governed by the 2D Helmholtz equation. We denote by $\mathrm V_n$ and $\mathrm U_n$ the cylindrical Bessel functions
+
+$$
+ \mathrm V_n(k\mathbf r):=\mathrm J_n(kr)\mathrm e^{\mathrm in\theta} 
+\quad\text{and}\quad
+\mathrm U_n(k \mathbf r):= \mathrm H_n(k r)\mathrm e^{\mathrm in\theta}
+$$
+
+where $k$ is the background wavenumber and  $(r,\theta)$ are the polar coordinates of $\mathbf r$, ie $\mathbf r = (r\cos \theta,r\sin\theta)$, $\mathrm J_n$ and $\mathrm H_n$ are respectively the Bessel function of order zero and the Hankel function. 
+
+We consider the scattering from a set of $J$ cylinders confined in a circular area of radius $R$. The  incident field $u_i$ can be decomposed in modes:
+
+$$
+\tag{1}
+u_i(\mathbf r) =  \sum_{n=-\infty}^{+\infty}g_n\mathrm V_n(k\mathbf r),\quad g_n\in\mathbb{C}.
+$$
+
+Then the averaged scattered field $\langle u_s\rangle$ (over all possible configurations of the $J$ cylinders confined in the disc of radius $R$) can be written
+
+$$
+\tag{2}
+\langle u_s\rangle(\mathbf r) =  \sum_{n=-\infty}^{+\infty}\mathfrak F_n\mathrm H_n(k\mathbf r), \quad \mathfrak F_n := \mathrm T_ng_n
+$$
+
+where $\mathrm T_n$ is related to the effective T-matrix $\mathrm T_{n,m}$ of the effective cylinder of radius $R$. More precisely,
+
+$$
+\tag{3}
+\mathrm T_{n,m} = \delta_{n,m} \mathrm T_n.
+$$
+
+With this definition, the scattering from the effective cylinder of radius $R$ can be summerized in matrix form 
+
+$$
+\tag{4}
+\mathbf{\mathfrak{F} = \mathbf T \mathbf g}
+$$
+
+where we defined the vectors $\mathbf{\mathfrak{F}}=(\mathfrak F_n)_n$ and $\mathbf g = (g_n)_n$.
+
+---
+**Purpose of this package**
+
+<ol>
+  <li> Compute the effective T-matrix by using the Effective Waves Method </li>
+  <li> Validate the result with Monte Carlo simulations</li>
+</ol>
+
+**__NOTE:__** The package currently focuses on the ensemble average of acoustic cylinders in a homogeneous host medium. The code is setup to easily integrate higher dimensions and other physics such as elastodynamics or electromagnetics. The package can also potentially take into account more complex microstructures (the two medium problem).
+
+---
+
+### Demo 1: Computation of the coefficients $\mathrm T_n$ 
+
+cf examples/plane_wave_scattering/plane_wave_scattering.jl
+
+### Demo 2: Monte Carlo validation of the coefficients $\mathrm T_n$ 
+
+cf examples/monte_carlo_validation/monte_carlo_validation.jl
+
+### Demo 3: Monte Carlo validation of the diagonal form of the T-matrix
+
+cf examples/modal_scattering/modal_scattering.jl
+
+
+## II) The mode to mode scattering in a 2D setting
 ### Modal source
 
 For a 2D setting, a modal source is of the form 

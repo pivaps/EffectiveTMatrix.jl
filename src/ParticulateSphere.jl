@@ -5,7 +5,7 @@ ParticulateCylinder{T} = ParticulateSphere{T,2}
 
 radius(sphere::ParticulateSphere) = sphere.shape.radius;
 
-function t_matrix(ω::AbstractFloat, host_medium::PhysicalMedium, material::ParticulateSphere, basis_order::Integer, basis_field_order::Integer)
+function t_matrix(ω::AbstractFloat, host_medium::PhysicalMedium, material::ParticulateSphere; basis_order=10::Integer, basis_field_order=10::Integer)
 
     kstar, wavemode = solve_eigensystem(ω, host_medium, material; basis_order=basis_order);
     N,D = t_matrix_num_denom(kstar,wavemode;basis_field_order=basis_field_order);
@@ -91,14 +91,20 @@ function t_matrix_num_denom(kstar,wavemode;basis_field_order)
     return Matrix_Num, Matrix_Denom
 end
 
-function average_scattered_field(ω::AbstractFloat, x_vec::Vector{V}, source::AbstractSource{P}, material::ParticulateSphere{T,Dim},
-     basis_order::Integer, basis_field_order::Integer) where {T,Dim,P<:PhysicalMedium{Dim},V <: AbstractArray{T}}
+function average_scattered_field(ω::AbstractFloat, region, source::AbstractSource{P}, material::ParticulateSphere{T,Dim};
+    res=300, kws...) where {T,Dim,P<:PhysicalMedium{Dim},V <: AbstractArray{T}}
 
-    T_matrix =  t_matrix(ω, source.medium, material, basis_order, basis_field_order)
+    x_vec, _ = points_in_shape(region;resolution=res);
+    average_scattered_field(ω, x_vec, source, material; kws...)
+end
+
+function average_scattered_field(ω::AbstractFloat, x_vec::Vector{V}, source::AbstractSource{P}, material::ParticulateSphere{T,Dim};
+     basis_order=10::Integer, basis_field_order=10::Integer) where {T,Dim,P<:PhysicalMedium{Dim},V <: AbstractArray{T}}
+
+    T_matrix =  t_matrix(ω, source.medium, material; basis_order=basis_order, basis_field_order=basis_field_order)
     source_coefficient = regular_spherical_coefficients(source)
     G = source_coefficient(basis_field_order,zeros(Dim),ω)
 
-    println(length(T_matrix))
     N = basislength_to_basisorder(P,length(G))
     basis = outgoing_basis_function(source.medium, ω)
 

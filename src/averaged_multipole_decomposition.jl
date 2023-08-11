@@ -47,9 +47,9 @@ function run_MC_validation(host_medium::PhysicalMedium{Dim}, list_params::Vector
         # Effective method
         micro = Microstructure(host_medium,params.sps_MC);
         material = Material(Sphere{T,Dim}(zeros(Dim),params.R),micro);
-        μ = t_matrix(params.ω, host_medium, material, basis_order, basis_field_order)[basis_field_order+1:2basis_field_order+1];
+        μ = t_matrix(params.ω, host_medium, material, basis_order=basis_order, basis_field_order=basis_field_order)[basis_field_order+1:2basis_field_order+1];
         # Monopole approximation of the T matrix
-        μ0 = t_matrix(params.ω, host_medium, material, 0, basis_field_order)[basis_field_order+1:2basis_field_order+1];
+        μ0 = t_matrix(params.ω, host_medium, material, basis_order=0, basis_field_order=basis_field_order)[basis_field_order+1:2basis_field_order+1];
 
         push!(MC_vec,
                 MonteCarloResult(basis_order,basis_field_order,params.ω,params.sps_MC[1],params.R,μ,σ,nb_iterations,μ,μ0)

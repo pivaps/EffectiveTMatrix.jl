@@ -1,52 +1,28 @@
-# Parameters over which we might want to run loops
-struct MonteCarloParameters{T,Dim}
-    ω::T
-    sps_MC::Species{Dim}
-    R::T
-
-    function MonteCarloParameters(ω::T, sps_MC::Species{Dim}, R::T) where {T,Dim}
-        new{T,Dim}(ω,sps_MC,R)
-    end
-end
-
 # The object MonteCarloResult contains the parameters and result of the the MC simulations
-mutable struct MonteCarloResult
+# N is basis_field_order+1
+ mutable struct MonteCarloResult{N} 
     basis_order::Int64
-    basis_field_order::Int64
-
     ω::Float64
     sp_MC::Specie
     R::Float64
-
-    μ::Vector{ComplexF64} 
-    σ::Vector{ComplexF64}
-    nb_iterations::Vector{Int64}
-
-    μeff::Vector{ComplexF64}
-    μeff0::Vector{ComplexF64}
-
-    function MonteCarloResult(
-        basis_order::Int64,
-        basis_field_order::Int64,
-
-        ω::Float64,
-        sp_MC::Specie,
-        R::Float64,
-
-        μ::Vector{ComplexF64},
-        σ::Vector{ComplexF64},
-        nb_iterations::Vector{Int64},
-
-        μeff::Vector{ComplexF64},
-        μeff0::Vector{ComplexF64})
-
-        if length(μ) != basis_field_order+1 || length(σ) != basis_field_order+1 || length(nb_iterations)!= basis_field_order+1 || length(μeff) != basis_field_order+1 || length(μeff0) != basis_field_order+1
-            error("μ, σ, nb_iterations, μeff and μeff0 have to be of length basis_field_order+1")
-        end
-
-        new(basis_order,basis_field_order,ω,sp_MC,R,μ,σ,nb_iterations,μeff,μeff0)
-    end
+    μ::SVector{N,ComplexF64} 
+    σ::SVector{N,ComplexF64}
+    nb_iterations::SVector{N,Int64}
+    μeff::SVector{N,ComplexF64}
+    μeff0::SVector{N,ComplexF64}
 end
+
+function MonteCarloResult(ω::Float64,sp_MC::Specie,R::Float64; basis_order=5::Int, basis_field_order=0::Int)
+    N = basis_field_order+1
+    a = Array{Int,1}(undef,N)
+    b = Array{ComplexF64,1}(undef,N)
+    return MonteCarloResult{N}(basis_order, ω, sp_MC, R, b, b, a, b, b)
+end
+
+function MonteCarloResult(params::MonteCarloParameters; kws...)
+    return MonteCarloResult(params.ω, params.sp_MC, params.R; kws...)
+end
+  
 
 function uncertainty(V::Vector{Float64})
     return 1.96*std(V)/sqrt(length(V))    
@@ -72,7 +48,8 @@ function CSV_string_vec(v::Vector)
     return "\""*chop(string_v)*"\""
 end
 
-function MC_write(MC_vec::Vector{MonteCarloResult},file_path::String)
+function MC_write(MC_vec::Vector{MonteCarloResult},file_path::String) 
+    basis_field_order = length(MC_vec[1].μ)-1
     header = [
         "basis_order",
         "basis_field_order",
@@ -105,7 +82,7 @@ function MC_write(MC_vec::Vector{MonteCarloResult},file_path::String)
             for MC in MC_vec
                 write(f,
                     "$(MC.basis_order),",
-                    "$(MC.basis_field_order),",
+                    "$(basis_field_order),",
 
                     "$(MC.ω),",
                     "$(MC.R),",
@@ -146,8 +123,9 @@ function MC_read(file_path::String)
         μeff = parse.(ComplexF64,split(file.μeff[i],","))
         μeff0 = parse.(ComplexF64,split(file.μeff0[i],","))
 
+
         push!(MC_vec,
-                MonteCarloResult(file.basis_order[i],file.basis_field_order[i],file.ω[i],sp_MC,file.R[i],μ,σ,nb_iterations,μeff,μeff0)
+                MonteCarloResult(file.basis_order[i],file.ω[i],sp_MC,file.R[i],μ,σ,nb_iterations,μeff,μeff0)
                 )
     end
     return MC_vec

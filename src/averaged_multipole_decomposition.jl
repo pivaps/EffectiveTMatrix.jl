@@ -31,35 +31,31 @@ function run_MC_validation(Ω::Vector{Float64}, host_medium::PhysicalMedium, mat
     return run_MC_validation(host_medium, params; kws...);
 end
 
-function run_MC_validation(host_medium::PhysicalMedium{Dim}, params::MonteCarloParameters{T,Dim}; kws...) where {T,Dim}
-    return run_MC_validation(host_medium, [params]; kws...)[1];
+function run_MC_validation!(host_medium::PhysicalMedium{Dim}, MC::MonteCarloResult{N};kws...) where {Dim,N}
+    run_MC_validation!(host_medium, [MC]; kws...);
+    return nothing
 end
 
 # main function for run_MC_validation
-function run_MC_validation(host_medium::PhysicalMedium{Dim}, list_params::Vector{MonteCarloParameters{T,Dim}};
-    save_data=true, save_realisations=false, description="No description given", basis_order::Int=10, basis_field_order::Int=0, kws...) where {T,Dim}
+function run_MC_validation!(host_medium::PhysicalMedium{Dim}, MC_vec::Vector{MonteCarloResult{N}};
+        basis_order::Int=10, kws...) where {Dim,N}
 
-    MC_vec = Vector{MonteCarloResult}();
-    for params in list_params
+        basis_field_order = N-1
+    for MC in MC_vec
         #  statistics of Monte Carlo simulations (μ=mean, σ=variance, nb_iterations)
-        μ, σ, nb_iterations = sample_effective_t_matrix(host_medium, params; basis_order, basis_field_order, kws...);
+        sample_effective_t_matrix!(MC, host_medium; basis_order, basis_field_order, kws...);
         
         # Effective method
-        micro = Microstructure(host_medium,params.sps_MC);
-        material = Material(Sphere{T,Dim}(zeros(Dim),params.R),micro);
-        μ = t_matrix(params.ω, host_medium, material, basis_order=basis_order, basis_field_order=basis_field_order)[basis_field_order+1:2basis_field_order+1];
+        micro = Microstructure(host_medium,[MC.sp_MC]);
+        material = Material(Sphere{Float64,Dim}(zeros(Dim),MC.R),micro);
+        μeff = t_matrix(MC.ω, host_medium, material, basis_order=basis_order, basis_field_order=basis_field_order)[basis_field_order+1:2basis_field_order+1];
         # Monopole approximation of the T matrix
-        μ0 = t_matrix(params.ω, host_medium, material, basis_order=0, basis_field_order=basis_field_order)[basis_field_order+1:2basis_field_order+1];
-
-        push!(MC_vec,
-                MonteCarloResult(basis_order,basis_field_order,params.ω,params.sps_MC[1],params.R,μ,σ,nb_iterations,μ,μ0)
-        )
+        μeff0 = t_matrix(MC.ω, host_medium, material, basis_order=0, basis_field_order=basis_field_order)[basis_field_order+1:2basis_field_order+1];
+        MC.μeff = μeff
+        MC.μeff0 = μeff0
     end
 
-    if save_data | save_realisations
-        save(MC_vec,description)
-    end
-    return MC_vec
+    return nothing
 end
 
 """
@@ -77,18 +73,19 @@ in [0; basis_field_order]
 # each loops). I still need to check if this is required or not, for the moment it is difficult to set a convergence criteria. 
 # note that a mode is assumed to be zero as soon as smaller than 1e-8, the code then stops iterating on this mode.
 # Monte Carlo Simulation for the acoustic cylinder
-function sample_effective_t_matrix(host_medium::PhysicalMedium{Dim}, params::MonteCarloParameters{T,Dim};
+function sample_effective_t_matrix!(MC::MonteCarloResult,host_medium::PhysicalMedium;
     basis_order::Int, basis_field_order::Int,
-    nb_iterations_max=5000::Int,nb_iterations_step=200::Int,prec=1e-1::Float64) where {T,Dim}
+    nb_iterations_max=500::Int,nb_iterations_step=200::Int,prec=1e-1::Float64)
 
-    ω = params.ω
-    sps_MC = params.sps_MC
-    radius_big_cylinder = params.R
+    ω = MC.ω
+    sps_MC = [MC.sp_MC]
+    radius_big_cylinder = MC.R
+    basis_field_order = length(MC.μ)-1
 
     
     k = ω/host_medium.c
     # Precompute T-matrices for these particles
-    t_matrix = get_t_matrices(host_medium, [sp.particle for sp in sps_MC], ω, basis_order)[1]
+    TMatrix = get_t_matrices(host_medium, [sp.particle for sp in sps_MC], ω, basis_order)[1]
 
     # We need this big vector F to store realisation of each modes 
     # which convergent rate my differ
@@ -100,39 +97,33 @@ function sample_effective_t_matrix(host_medium::PhysicalMedium{Dim}, params::Mon
     initial_basis_field_order = basis_field_order
     select_modes = trues(basis_field_order+1)
 
-    continue_crit() = any(select_modes) && maximum(total_iterations) < nb_iterations_max
+    
     
     # confidence interval level 95% is [m-1.96σ/√n ; m+1.96σ/√n]
     # we have [1.96σ/√nb_iterations < prec*|m|] => m = empirical_mean ± prec*|m|] 
     # mode_continue_crit(m,s_r,s_i,n,prec) = (1.96*s_r/sqrt(n) > abs(real(m))*prec || 1.96*s_i/sqrt(n) > abs(imag(m))*prec) && abs(m) > 1e-8
     # the function below updates select_modes accordingly
-    function update_running_modes!()
-        for mode=0:basis_field_order
-            if select_modes[mode+1]
-                m = mean(F[mode+1]) # can be computed iteratively and stored to optimize
-                s_r = std(real.(F[mode+1]); mean=real(m))
-                s_i = std(imag.(F[mode+1]); mean=imag(m))
-                select_modes[mode+1] = (1.96*s_r/sqrt(total_iterations) > abs(real(m))*prec || 1.96*s_i/sqrt(total_iterations) > abs(imag(m))*prec) && abs(m) > 1e-8
-            end
-        end
-        if any(select_modes)
-            basis_field_order = maximum(collect(0:initial_basis_field_order)[select_modes])
-        end
-    end
+    # function update_running_modes!(F,basis_field_order,select_modes,total_iterations,prec)
+    #     for mode=0:basis_field_order
+    #         if select_modes[mode+1]
+    #             m = mean(F[mode+1]) # can be computed iteratively and stored to optimize
+    #             s_r = std(real.(F[mode+1]); mean=real(m))
+    #             s_i = std(imag.(F[mode+1]); mean=imag(m))
+    #             select_modes[mode+1] = (1.96*s_r/sqrt(total_iterations) > abs(real(m))*prec || 1.96*s_i/sqrt(total_iterations) > abs(imag(m))*prec) && abs(m) > 1e-8
+    #         end
+    #     end
+    #     if any(select_modes)
+    #         basis_field_order = maximum(collect(0:initial_basis_field_order)[select_modes])
+    #     end
+    # end
 
-    while continue_crit()
+    while any(select_modes) && maximum(total_iterations) < nb_iterations_max
         for _ in 1:nb_iterations_step
 
             # note sps_MC[1] in renew_particle_configurations - the latter function only takes into account one type of sp for now
             particles = renew_particle_configurations(sps_MC[1],radius_big_cylinder)
             rθ = [cartesian_to_radial_coordinates(origin(p)) for p in particles]
             n_particles = length(particles)
-
-            # J = [Jₙ(krᵢ) for n=0:bo+bfo, i=1:nb_particles]
-            J = [
-                    besselj(n,k*rθ[i][1]) 
-                        for n = 0:(basis_order+basis_field_order),i=1:n_particles
-                ]
 
             # M_bessel = [Jₙ(krᵢ)exp(Im*n*θᵢ) for n=0:bo+bfo, i=1:nb_particles] (no mistake: n starts at 0)
             blocs_V₊ = [ besselj(n,k*rθ[i][1])*exp(im*n*rθ[i][2]) 
@@ -145,7 +136,7 @@ function sample_effective_t_matrix(host_medium::PhysicalMedium{Dim}, params::Mon
             # blocs_V is of size (2*basis_order + basis_field_order + 1) x n_particles
 
             # Compute scattering matrix for all particles
-            S = scattering_matrix(host_medium, particles, [t_matrix for p in particles], ω, basis_order)
+            S = scattering_matrix(host_medium, particles, [TMatrix for p in particles], ω, basis_order)
 
             V = Array{ComplexF64,2}(undef,2*basis_order+1,n_particles)
             a = Array{ComplexF64,2}(undef,2*basis_order+1,n_particles)
@@ -161,29 +152,40 @@ function sample_effective_t_matrix(host_medium::PhysicalMedium{Dim}, params::Mon
                     # reshape and multiply by t-matrix to get the scattering coefficients
                     a .= reshape((S + I) \ reduce(vcat,V),2*basis_order+1,n_particles)
                     for i in axes(a,2)
-                        a[:,i] = t_matrix * a[:,i]
+                        a[:,i] = TMatrix * a[:,i]
                     end
 
                     # this uses a lot of memory, should be optimized
-                    F_step= sum(conj(V).*a)
-                    push!(F[input_mode_index],F_step)
+                    push!(F[input_mode_index],sum(conj(V).*a))
                     
                 end
             end # mode loop                                                      
         end # iteration step
        
         total_iterations += nb_iterations_step
-        update_running_modes!()
+
+        #update_running_modes!(F,basis_field_order,select_modes,total_iterations,prec)
+        for mode=0:basis_field_order
+            if select_modes[mode+1]
+                m = mean(F[mode+1]) # can be computed iteratively and stored to optimize
+                s_r = std(real.(F[mode+1]); mean=real(m))
+                s_i = std(imag.(F[mode+1]); mean=imag(m))
+                select_modes[mode+1] = (1.96*s_r/sqrt(total_iterations) > abs(real(m))*prec || 1.96*s_i/sqrt(total_iterations) > abs(imag(m))*prec) && abs(m) > 1e-8
+            end
+        end
+        if any(select_modes)
+            basis_field_order = maximum(collect(0:initial_basis_field_order)[select_modes])
+        end
+        ## finished updating running modes
 
         println("nb iterations:",total_iterations)
         println("modes still running:", select_modes,"\n")
     end # while
-
-    μ = mean.(F)
-    σ = [std(real.(F[N]);mean=real(μ[N])) + im*std(imag.(F[N]);mean=imag(μ[N])) for N=1:initial_basis_field_order+1];
-    nb_iterations = length.(F);
     
-    return μ, σ, nb_iterations
+    MC.μ = mean.(F);
+    MC.σ = [std(real.(F[N]);mean=real(MC.μ[N])) + im*std(imag.(F[N]);mean=imag(MC.μ[N])) for N=1:initial_basis_field_order+1];
+    MC.nb_iterations = length.(F);
+    return nothing
 end
 
 
@@ -311,4 +313,103 @@ function generate_species(radius_big_cylinder::Float64,particle::Particle,ϕ::Fl
     sp_EF = sp_MC_to_EF(sp_MC,radius_big_cylinder)
 
     return sp_MC, sp_EF
+end
+
+
+function sample_effective_t_matrix_archive(ω::Number, host_medium::PhysicalMedium, sp::Specie;
+    radius_big_cylinder=10.0::Float64, basis_order=10::Int, basis_field_order=0::Int,
+    nb_iterations_max=5000::Int,nb_iterations_step=200::Int,prec=1e-1::Float64) 
+
+    k = ω/host_medium.c
+    # Precompute T-matrices for these particles
+    t_matrix = get_t_matrices(host_medium, [sp.particle], ω, basis_order)[1]
+
+    # We need this big vector F to store realisation of each modes 
+    # which convergent rate my differ
+    F = [ComplexF64[] for _ in 0:basis_field_order]
+
+    # To estimate convergence of each modes, we keep track of number of iterations of each of them:
+    total_iterations = 0;  
+
+    initial_basis_field_order = basis_field_order
+    select_modes = trues(basis_field_order+1)
+
+    continue_crit() = any(select_modes) && maximum(total_iterations) < nb_iterations_max
+    
+    # confidence interval level 95% is [m-1.96σ/√n ; m+1.96σ/√n]
+    # we have [1.96σ/√nb_iterations < prec*|m|] => m = empirical_mean ± prec*|m|] 
+    # mode_continue_crit(m,s_r,s_i,n,prec) = (1.96*s_r/sqrt(n) > abs(real(m))*prec || 1.96*s_i/sqrt(n) > abs(imag(m))*prec) && abs(m) > 1e-8
+    # the function below updates select_modes accordingly
+    function update_running_modes!()
+        for mode=0:basis_field_order
+            if select_modes[mode+1]
+                m = mean(F[mode+1]) # can be computed iteratively and stored to optimize
+                s_r = std(real.(F[mode+1]); mean=real(m))
+                s_i = std(imag.(F[mode+1]); mean=imag(m))
+                select_modes[mode+1] = (1.96*s_r/sqrt(total_iterations) > abs(real(m))*prec || 1.96*s_i/sqrt(total_iterations) > abs(imag(m))*prec) && abs(m) > 1e-8
+            end
+        end
+        if any(select_modes)
+            basis_field_order = maximum(collect(0:initial_basis_field_order)[select_modes])
+        end
+    end
+
+    while continue_crit()
+        for _ in 1:nb_iterations_step
+
+            particles = renew_particle_configurations(sp,radius_big_cylinder)
+            rθ = [cartesian_to_radial_coordinates(origin(p)) for p in particles]
+            n_particles = length(particles)
+
+            # J = [Jₙ(krᵢ) for n=0:bo+bfo, i=1:nb_particles]
+            J = [
+                    besselj(n,k*rθ[i][1]) 
+                        for n = 0:(basis_order+basis_field_order),i=1:n_particles
+                ]
+
+            # M_bessel = [Jₙ(krᵢ)exp(Im*n*θᵢ) for n=0:bo+bfo, i=1:nb_particles] (no mistake: n starts at 0)
+            blocs_V₊ = [ besselj(n,k*rθ[i][1])*exp(im*n*rθ[i][2]) 
+                                    for n=0:basis_order+basis_field_order, i=1:n_particles]   
+            
+            blocs_V₋ = [ (-1)^n*conj(blocs_V₊[n+1,i])
+                                    for n=1:basis_order, i=1:n_particles] 
+
+            blocs_V = reverse(vcat(reverse(blocs_V₋,dims=1),blocs_V₊),dims=1)
+            # blocs_V is of size (2*basis_order + basis_field_order + 1) x n_particles
+
+            # Compute scattering matrix for all particles
+            S = scattering_matrix(host_medium, particles, [t_matrix for p in particles], ω, basis_order)
+
+            V = Array{ComplexF64,2}(undef,2*basis_order+1,n_particles)
+            a = Array{ComplexF64,2}(undef,2*basis_order+1,n_particles)
+
+      
+            for input_mode = 0:basis_field_order # optimal when this loop comes after renewing particles
+                input_mode_index = input_mode+1
+                if  select_modes[input_mode_index]
+
+                    inds = (basis_field_order-input_mode+1):(basis_field_order-input_mode+2*basis_order+1)
+                    V .= blocs_V[inds,:]                  
+                    
+                    # reshape and multiply by t-matrix to get the scattering coefficients
+                    a .= reshape((S + I) \ reduce(vcat,V),2*basis_order+1,n_particles)
+                    for i in axes(a,2)
+                        a[:,i] = t_matrix * a[:,i]
+                    end
+
+                    # this uses a lot of memory, should be optimized
+                    push!(F[input_mode_index], sum(conj(V).*a))
+                    
+                end
+            end # mode loop                                                      
+        end # iteration step
+       
+        total_iterations += nb_iterations_step
+        update_running_modes!()
+
+        println("nb iterations:",total_iterations)
+        println("modes still running:", select_modes,"\n")
+    end # while
+
+    return F
 end

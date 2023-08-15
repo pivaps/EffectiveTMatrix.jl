@@ -161,8 +161,8 @@ plot!(title="Scattering from incident point source")
 ```
 
 <p align="center">
-  <img src="examples/pressure_field/plane_wave_scattering.png" width="200" />
-  <img src="examples/pressure_field/point_source_scattering.png" width="200" /> 
+  <img src="examples/pressure_field/plane_wave_scattering.png" width="400px" />
+  <img src="examples/pressure_field/point_source_scattering.png" width="400px" /> 
 </p>
 
 
@@ -221,14 +221,14 @@ plot(MC)
 ```
 
 <p align="center">
-  <img src="examples/Monte_Carlo_validation/MC_fixed_params.png" width="200" />
+  <img src="examples/Monte_Carlo_validation/MC_fixed_params.png" width="500" />
 </p>
 
 
 The plot above shows $\mathrm{Re}(\mathrm T_n)$ for $n\in[0,4]$ using three different methods: the Monte Carlo simulations (MC), the Effective Waves Method (EWM) and the Monopole Approximation of the Effective Waves Method (EFM-MA). The latter method is obtained when the particles are approximated with monopole scatterers and give good results in the case of quasi-monopole scatterers (cf. next paragraph).
 
 
-#### List set of parameters
+#### List of parameters
 
 Running Monte Carlo simulations on a list of parameters is very similar to the above, one only need to initialise a vector of MonteCarloResult objects instead. Here is an example of a multi frequencies simulation:
 
@@ -243,7 +243,7 @@ plot(MC_vec)
 ```
 
 <p align="center">
-  <img src="examples/Monte_Carlo_validation/MC_multi_frq.png" width="200" />
+  <img src="examples/Monte_Carlo_validation/MC_multi_frq.png" width="500" />
 </p>
 
 The Monopole approximation method (EWM-MA) gives a good approximation in the low frequency regime because the sound soft particles are then quasi-monopole scatterers.
@@ -342,12 +342,10 @@ The scattered field $u_s$ can be decomposed in modes $\mathrm U_n$ defined by (E
 
 $$
 \tag{7}
-u_s(\mathbf{r}) =  \sum_{n=-\infty}^{+\infty} \mathfrak{F}_n\mathrm U_n(k\mathbf{r}),
-\qquad
-\mathfrak{F}_n :=  \sum_{i=1}^J\sum_{n'=-\infty}^{+\infty}\mathrm V_{n'-n}(-k\mathbf r_i)f_{n'}^i
+u _ s(\mathbf{r}) =  \sum _ {n=-\infty}^{+\infty} \mathfrak{F} _ n\mathrm U _ n(k\mathbf{r}), \qquad \text{where}\quad \mathfrak{F} _ n := \sum _ {n=-\infty}^{+\infty} \sum _ {j=1}^J \mathrm{V} _ {n'-n}(-k\mathbf{r} _ i )f_{n'}^i
 $$
 
-The coefficients $\mathfrak F_n$ depend on the particles configuration, which centers are given by $\mathbf r_1,\dots,\mathbf r_J$. In the above, the coefficients $f_{n}^i$ are obtained after solving the Foldy-Lax equations. The coefficients $\mathfrak F_n$ for $ n \in [0,\text{basis\_field\_order}]$ are computed as follows:
+The coefficients $\mathfrak F_n$ depend on the particles configuration, which centers are given by $\mathbf r_1,\dots,\mathbf r_J$. In the above, the coefficients $f_{n}^i$ are obtained after solving the Foldy-Lax equations. The coefficients $\mathfrak F_n$ for $n\in\[0,N \]$ N = basis_field_order, are computed as follows:
 
 ```julia
 basis_field_order = 4;                                    # number of modes to compute
@@ -457,20 +455,20 @@ The radial case corresponded to the case $n=0$, we illustrate this result again 
 
 
 <p align="center">
-  <img src="examples/modal_scattering/source_mode_3.png" width="200" />
+  <img src="examples/modal_scattering/source_mode_3.png" width="400" />
 </p>
 
 
 
 
 <p align="center">
-  <img src="examples/modal_scattering/scattering_mode_3.png" width="200" />
-  <img src="examples/modal_scattering/mean_us_mode_3.png" width="200" /> 
+  <img src="examples/modal_scattering/scattering_mode_3.png" width="400" />
+  <img src="examples/modal_scattering/mean_us_mode_3.png" width="400" /> 
 </p>
 
 <p align="center">
-  <img src="examples/modal_scattering/deterministic_modal_decomposition_mode_3.png" width="200" />
-  <img src="examples/modal_scattering/average_modal_decomposition_mode_3.png" width="200" /> 
+  <img src="examples/modal_scattering/deterministic_modal_decomposition_mode_3.png" width="400" />
+  <img src="examples/modal_scattering/average_modal_decomposition_mode_3.png" width="400" /> 
 </p>
 
 The coefficient $\langle\mathfrak F_n\rangle$ appearing in (10) corresponds to  $\mathrm T_n$. This quantity is computed with (7) and averaged other particles configurations. The function run_MC_validation! uses this modal scattering property to compute the coefficients of the effective T-matrix.

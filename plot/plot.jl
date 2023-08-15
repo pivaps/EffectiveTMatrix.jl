@@ -3,32 +3,32 @@
         background_color --> :black, foreground_color --> :white
     end
 
-    basis_field_order = length(MC.μ)
+    basis_field_order = length(MC.μ)-1
     η = uncertainty(MC)
     seriestype --> :scatter
     
 
     @series begin
-        label --> "μ"
+        label --> "MC"
         yerror --> field_apply(η)
-        field_apply.(MC.μ)
+        0:basis_field_order, field_apply.(MC.μ)
     end
 
     @series begin
-        label --> "μeff"
-        field_apply.(MC.μeff)
+        label --> "EWM"
+        0:basis_field_order, field_apply.(MC.μeff)
     end
 
     @series begin
-        label --> "μeff0"
-        field_apply.(MC.μeff0)
+        label --> "EWM-MA"
+        0:basis_field_order, field_apply.(MC.μeff0)
     end
 end
 
 
-@recipe function plot(MC_vec::Vector{MonteCarloResult};
+@recipe function plot(MC_vec::Vector{MonteCarloResult{N}};
     mode=0, xproperty::Symbol=:ω, x_field_apply=real,
-    MC_filter=1,MC_color=:green4, MA_color=:steelblue1, exact_color=:coral)
+    MC_filter=1,MC_color=:green4, MA_color=:steelblue1, exact_color=:coral) where N
     
     basis_field_order = length(MC_vec[1].μ)
     if mode > basis_field_order
@@ -51,7 +51,7 @@ end
 
     for (i,field_apply) in enumerate((real,imag))
         @series begin
-            label --> "Predicted"
+            label --> "EWM"
             linewidth --> 3
             linecolor --> exact_color
             # linestyle --> :dash
@@ -60,9 +60,10 @@ end
         end
 
         @series begin
-            label --> "MA"
+            label --> "EWM-MA"
             linewidth --> 3
             linecolor --> MA_color
+            linestyle --> :dash
             subplot := i
             x_vec,field_apply.([MC.μeff0[mode+1] for MC in MC_vec])
         end
@@ -71,7 +72,7 @@ end
             label --> "MC"
             line --> false
             markershape --> :circle
-            markersize --> 2
+            markersize --> 2.5
             markercolor --> MC_color
             markeralpha --> .7
             markerstrokecolor --> MC_color
@@ -87,10 +88,10 @@ end
 
 
 
-@recipe function plot(MC_vec_vec::Vector{Vector{MonteCarloResult}};
+@recipe function plot(MC_vec_vec::Vector{Vector{MonteCarloResult{N}}};
     mode=0, xproperty::Symbol=:ω, field_apply=real, x_field_apply=real,
     subtitles=["\nmonopole scatterers\n" "\nmultipole scatterers\n"],
-    MC_filter=1,MC_color=:green4, MA_color=:steelblue1, exact_color=:coral)
+    MC_filter=1,MC_color=:green4, MA_color=:steelblue1, exact_color=:coral) where N
     
     MC_vec = MC_vec_vec[1];
     basis_field_order = length(MC_vec[1].μ)
@@ -118,7 +119,7 @@ end
 
 
         @series begin
-            label --> "Predicted"
+            label --> "EWM"
             linewidth --> 3
             linecolor --> exact_color
             subplot := i
@@ -126,7 +127,7 @@ end
         end
 
         @series begin
-            label --> "MA"
+            label --> "EWM-MA"
             linewidth --> 3
             linecolor --> MA_color
             linestyle --> :dash
@@ -138,7 +139,7 @@ end
             label --> "MC"
             line --> false
             markershape --> :circle
-            markersize --> 2
+            markersize --> 2.5
             markercolor --> MC_color
             markeralpha --> .7
             markerstrokecolor --> MC_color

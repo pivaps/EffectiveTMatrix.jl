@@ -26,14 +26,14 @@ scatter!(0:N,imag.(T[N+1:2N+1]),label=L"$\mathrm{Im\,(T}_n)$")
 scatter!(title="Effective T-matrix diagonal terms", xlabel=L"$n$", ylabel=L"$\mathrm{T}_n$")
 # savefig("T-matrix.png")
 
-## average scattered field from incident planar and point source
+## Define incident planar wave and point source
 # define the plane wave
 plane_wave = plane_source(host_medium; direction = [1.0,0.0]);
 
 # define the point source
-x0 = [-4.5cylinder_radius.0,0.0];                    # origin of the point source
-A = 1.0;                                             # amplitude of the point source
-point_wave = point_source(host_medium, x0, 1.0);
+x0 = [-4.5cylinder_radius,0.0];                    # origin of the point source
+A = 1.0;                                           # amplitude of the point source
+point_wave = point_source(host_medium, x0, A);
 
 
 # define box where to compute the average scattered field 

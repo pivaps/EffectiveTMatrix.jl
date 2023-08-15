@@ -19,11 +19,6 @@ function MonteCarloResult(ω::Float64,sp_MC::Specie,R::Float64; basis_order=5::I
     return MonteCarloResult{N}(basis_order, ω, sp_MC, R, b, b, a, b, b)
 end
 
-function MonteCarloResult(params::MonteCarloParameters; kws...)
-    return MonteCarloResult(params.ω, params.sp_MC, params.R; kws...)
-end
-  
-
 function uncertainty(V::Vector{Float64})
     return 1.96*std(V)/sqrt(length(V))    
 end

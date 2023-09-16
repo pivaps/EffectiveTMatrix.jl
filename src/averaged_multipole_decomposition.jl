@@ -21,15 +21,6 @@ function renew_particle_configurations(sp::Specie,radius_big_cylinder::Float64)
     config = config[norm.(origin.(config)) .< radius_big_cylinder .- outer_radius.(config)]
 end
 
-function run_MC_validation(ω::Number, host_medium::PhysicalMedium, material::ParticulateSphere; kws...) 
-    params = MonteCarloParameters(ω,material.microstructure.species,radius(material));
-    return run_MC_validation(host_medium, params; kws...);
-end
-
-function run_MC_validation(Ω::Vector{Float64}, host_medium::PhysicalMedium, material::ParticulateSphere; kws...) 
-    params = [MonteCarloParameters(ω,material.microstructure.species,radius(material)) for ω in Ω];
-    return run_MC_validation(host_medium, params; kws...);
-end
 
 function run_MC_validation!(host_medium::PhysicalMedium{Dim}, MC::MonteCarloResult{N};kws...) where {Dim,N}
     run_MC_validation!(host_medium, [MC]; kws...);
@@ -43,7 +34,7 @@ function run_MC_validation!(host_medium::PhysicalMedium{Dim}, MC_vec::Vector{Mon
         basis_field_order = N-1
     for MC in MC_vec
         #  statistics of Monte Carlo simulations (μ=mean, σ=variance, nb_iterations)
-        sample_effective_t_matrix!(MC, host_medium; basis_order, basis_field_order, kws...);
+        sample_effective_t_matrix!(MC, host_medium; basis_order=basis_order, kws...);
         
         # Effective method
         micro = Microstructure(host_medium,[MC.sp_MC]);
@@ -55,6 +46,18 @@ function run_MC_validation!(host_medium::PhysicalMedium{Dim}, MC_vec::Vector{Mon
         MC.μeff0 = μeff0
     end
 
+    return nothing
+end
+
+
+function update_monopole_approx!(host_medium::PhysicalMedium{Dim}, MC_vec::Vector{MonteCarloResult{N}}) where {Dim,N}
+    basis_field_order = N-1
+    for MC in MC_vec
+        micro = Microstructure(host_medium,[MC.sp_MC]);
+        material = Material(Sphere{Float64,Dim}(zeros(Dim),MC.R),micro);
+        μeff0 = t_matrix(MC.ω, host_medium, material, basis_order=0, basis_field_order=basis_field_order)[basis_field_order+1:2basis_field_order+1];
+        MC.μeff0 = μeff0
+    end
     return nothing
 end
 
@@ -74,8 +77,7 @@ in [0; basis_field_order]
 # note that a mode is assumed to be zero as soon as smaller than 1e-8, the code then stops iterating on this mode.
 # Monte Carlo Simulation for the acoustic cylinder
 function sample_effective_t_matrix!(MC::MonteCarloResult,host_medium::PhysicalMedium;
-    basis_order::Int, basis_field_order::Int,
-    nb_iterations_max=500::Int,nb_iterations_step=200::Int,prec=1e-1::Float64)
+    basis_order::Int, nb_iterations_max=500::Int,nb_iterations_step=200::Int,prec=1e-1::Float64)
 
     ω = MC.ω
     sps_MC = [MC.sp_MC]
@@ -236,7 +238,7 @@ function mode_analysis(input_mode::Int, ω::Number, host_medium::PhysicalMedium,
         F0[:,iter] = [sum(kernel_V(n,particles).*scattering_coefficients) for n = 0:basis_field_order]
     end
     
-    return mean.([F0[n,:] for n = 1:basis_field_order+1])
+    return [F0[n,:] for n = 1:basis_field_order+1]
 end
 
 # Very similar to the function above, however we only compute the mode that is not supposed to vanish.

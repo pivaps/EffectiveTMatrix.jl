@@ -35,7 +35,11 @@ function relative_error(MC::MonteCarloResult)
     return abs.(MC.μ-MC.μeff)./abs.(MC.μ), abs.(MC.μ-MC.μeff0)./abs.(MC.μ)    
 end
 
-function CSV_string_vec(v::Vector)
+function absolute_error(MC::MonteCarloResult)
+    return abs.(MC.μ-MC.μeff), abs.(MC.μ-MC.μeff0)    
+end
+
+function CSV_string_vec(v::SVector)
     string_v = string()
     for x in v
         string_v *= "$x,"
@@ -43,7 +47,7 @@ function CSV_string_vec(v::Vector)
     return "\""*chop(string_v)*"\""
 end
 
-function MC_write(MC_vec::Vector{MonteCarloResult},file_path::String) 
+function MC_write(MC_vec::Vector{MonteCarloResult{N}},file_path::String) where N
     basis_field_order = length(MC_vec[1].μ)-1
     header = [
         "basis_order",
@@ -106,7 +110,8 @@ end
 function MC_read(file_path::String)
     # file_path = "/home/kevish/Documents/Numeric/Julia/CylindersProject/Final/Data/Temp/4/MC.csv"
     file = CSV.File(file_path; types=Dict(:c_particle => ComplexF64)) 
-    MC_vec=Vector{MonteCarloResult}()
+    N = file.basis_field_order[1]+1
+    MC_vec=Vector{MonteCarloResult{N}}()
     for i = 1:length(file)
         particle = Particle(Acoustic(2; ρ=file.ρ_particle[i], c=file.c_particle[i]),Circle(file.particle_radius[i]))
         sp_MC = Specie(particle; volume_fraction = file.volume_fraction[i],separation_ratio=file.separation_ratio[i]) 
@@ -120,7 +125,7 @@ function MC_read(file_path::String)
 
 
         push!(MC_vec,
-                MonteCarloResult(file.basis_order[i],file.ω[i],sp_MC,file.R[i],μ,σ,nb_iterations,μeff,μeff0)
+                MonteCarloResult{N}(file.basis_order[i],file.ω[i],sp_MC,file.R[i],μ,σ,nb_iterations,μeff,μeff0)
                 )
     end
     return MC_vec
@@ -221,7 +226,7 @@ end
 
 
 # please provide folder path which CONTAINS the folder named "Data" inside
-function save(MC_vec::Vector{MonteCarloResult},description::String,all_data_path::String=pwd())
+function save(MC_vec::Vector{MonteCarloResult{N}},description::String,all_data_path::String=pwd()) where N
 
     # Check all_data_path is a valid path 
     if !isdir(all_data_path)

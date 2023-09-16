@@ -1,7 +1,5 @@
-@recipe function plot(MC::MonteCarloResult; field_apply=real, negative=false)
-    if negative
-        background_color --> :black, foreground_color --> :white
-    end
+@recipe function plot(MC::MonteCarloResult; field_apply=real,
+    MC_color=:black, MA_color=:steelblue2, exact_color=:brown2)
 
     basis_field_order = length(MC.μ)-1
     η = uncertainty(MC)
@@ -11,16 +9,19 @@
     @series begin
         label --> "MC"
         yerror --> field_apply(η)
+        color --> MC_color
         0:basis_field_order, field_apply.(MC.μ)
     end
 
     @series begin
         label --> "EWM"
+        color --> exact_color
         0:basis_field_order, field_apply.(MC.μeff)
     end
 
     @series begin
         label --> "EWM-MA"
+        color --> MA_color
         0:basis_field_order, field_apply.(MC.μeff0)
     end
 end
@@ -28,7 +29,7 @@ end
 
 @recipe function plot(MC_vec::Vector{MonteCarloResult{N}};
     mode=0, xproperty::Symbol=:ω, x_field_apply=real,
-    MC_filter=1,MC_color=:green4, MA_color=:steelblue1, exact_color=:coral) where N
+    MC_filter=1,MC_color=:black, MA_color=:steelblue2, exact_color=:brown2) where N
     
     basis_field_order = length(MC_vec[1].μ)
     if mode > basis_field_order
@@ -90,8 +91,8 @@ end
 
 @recipe function plot(MC_vec_vec::Vector{Vector{MonteCarloResult{N}}};
     mode=0, xproperty::Symbol=:ω, field_apply=real, x_field_apply=real,
-    subtitles=["\nmonopole scatterers\n" "\nmultipole scatterers\n"],
-    MC_filter=1,MC_color=:green4, MA_color=:steelblue1, exact_color=:coral) where N
+    subtitles=["\nDirichlet\n" "\nNeumann\n"],
+    MC_filter=1,MC_color=:black, MA_color=:steelblue2, exact_color=:brown2) where N
     
     MC_vec = MC_vec_vec[1];
     basis_field_order = length(MC_vec[1].μ)

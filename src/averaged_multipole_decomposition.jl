@@ -31,11 +31,8 @@ end
 function run_MC_validation!(host_medium::PhysicalMedium{Dim}, MC_vec::Vector{MonteCarloResult{N}};
         basis_order::Int=10, kws...) where {Dim,N}
 
-        basis_field_order = N-1
-    for MC in MC_vec
-        #  statistics of Monte Carlo simulations (μ=mean, σ=variance, nb_iterations)
-        sample_effective_t_matrix!(MC, host_medium; basis_order=basis_order, kws...);
-        
+    basis_field_order = N-1
+    for MC in MC_vec      
         # Effective method
         micro = Microstructure(host_medium,[MC.sp_MC]);
         material = Material(Sphere{Float64,Dim}(zeros(Dim),MC.R),micro);
@@ -68,6 +65,14 @@ Monte Carlo computation of the effective cylinder T_matrix. The coefficients are
 in [0; basis_field_order]
 """
 
+function sample_effective_t_matrix!(MC_vec::Vector{MonteCarloResult{N}},host_medium::PhysicalMedium{Dim}; 
+    kws...) where {N,Dim}
+
+    for MC in MC_vec
+        sample_effective_t_matrix!(MC, host_medium; kws...)
+    end
+end
+
 # This function is basically a for loop on parameter input_mode appearing in function optimal2_mode_analysis 
 # with elementary additional optimization. For each configuration of particles,
 # all the required bessel functions are computed at once in blocs_V. The matrix
@@ -76,13 +81,13 @@ in [0; basis_field_order]
 # each loops). I still need to check if this is required or not, for the moment it is difficult to set a convergence criteria. 
 # note that a mode is assumed to be zero as soon as smaller than 1e-8, the code then stops iterating on this mode.
 # Monte Carlo Simulation for the acoustic cylinder
-function sample_effective_t_matrix!(MC::MonteCarloResult,host_medium::PhysicalMedium;
-    basis_order::Int, nb_iterations_max=500::Int,nb_iterations_step=200::Int,prec=1e-1::Float64)
+function sample_effective_t_matrix!(MC::MonteCarloResult{N},host_medium::PhysicalMedium{Dim};
+    basis_order::Int, nb_iterations_max=500::Int,nb_iterations_step=200::Int,prec=1e-1::Float64) where {N,Dim}
 
     ω = MC.ω
     sps_MC = [MC.sp_MC]
     radius_big_cylinder = MC.R
-    basis_field_order = length(MC.μ)-1
+    basis_field_order = N-1
 
     
     k = ω/host_medium.c

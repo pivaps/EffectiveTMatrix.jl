@@ -8,7 +8,7 @@ export MonteCarloParameters, MonteCarloResult, run_MC_validation!, uncertainty, 
 
 # averaged_multipole_decomposition
 export update_monopole_approx!, sample_effective_t_matrix_archive,mode_source, renew_particle_configurations,
-sample_effective_t_matrix,naive_sample_effective_t_matrix,mode_analysis,
+sample_effective_t_matrix!,naive_sample_effective_t_matrix,mode_analysis,
 optimal1_mode_analysis,optimal2_mode_analysis,sp_MC_to_EF,generate_species
 
 # Plots

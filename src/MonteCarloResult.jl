@@ -108,26 +108,33 @@ end
 
 
 function MC_read(file_path::String)
-    # file_path = "/home/kevish/Documents/Numeric/Julia/CylindersProject/Final/Data/Temp/4/MC.csv"
-    file = CSV.File(file_path; types=Dict(:c_particle => ComplexF64)) 
+    # file_path = "/home/.julia/dev/EffectiveTMatrix/Data/1/MC.csv"
+    file = CSV.File(file_path; types=Dict(:c_particle => ComplexF64))  
     N = file.basis_field_order[1]+1
     MC_vec=Vector{MonteCarloResult{N}}()
-    for i = 1:length(file)
-        particle = Particle(Acoustic(2; ρ=file.ρ_particle[i], c=file.c_particle[i]),Circle(file.particle_radius[i]))
-        sp_MC = Specie(particle; volume_fraction = file.volume_fraction[i],separation_ratio=file.separation_ratio[i]) 
-        
-        μ = parse.(ComplexF64,split(file.μ[i],","))
-        σ = parse.(ComplexF64,split(file.σ[i],","))
-        nb_iterations = parse.(Int64,split(file.nb_iterations[i],","))
 
-        μeff = parse.(ComplexF64,split(file.μeff[i],","))
-        μeff0 = parse.(ComplexF64,split(file.μeff0[i],","))
+        for file_Row in file
+            
+            particle = Particle(Acoustic(2; ρ=file_Row.ρ_particle, c=file_Row.c_particle),Circle(file_Row.particle_radius))
+            sp_MC = Specie(particle; volume_fraction = file_Row.volume_fraction,separation_ratio=file_Row.separation_ratio) 
+            
+            μ = parse.(ComplexF64,split(file_Row.μ,","))
+            σ = parse.(ComplexF64,split(file_Row.σ,","))
+
+            if N==1
+                nb_iterations = [file_Row.nb_iterations]
+            else
+                nb_iterations = parse.(Int64,split(file_Row.nb_iterations,","))
+            end
+
+            μeff = parse.(ComplexF64,split(file_Row.μeff,","))
+            μeff0 = parse.(ComplexF64,split(file_Row.μeff0,","))
 
 
-        push!(MC_vec,
-                MonteCarloResult{N}(file.basis_order[i],file.ω[i],sp_MC,file.R[i],μ,σ,nb_iterations,μeff,μeff0)
-                )
-    end
+            push!(MC_vec,
+                    MonteCarloResult{N}(file_Row.basis_order,file_Row.ω,sp_MC,file_Row.R,μ,σ,nb_iterations,μeff,μeff0)
+                    )
+        end
     return MC_vec
 end
 

@@ -4,7 +4,8 @@ module EffectiveTMatrix
 export EffectiveParticle, ParticulateSphere, t_matrix, average_scattered_field
 
 # MonteCarloResult
-export MonteCarloParameters, MonteCarloResult, run_MC_validation!, uncertainty, relative_error, absolute_error, save, MC_read
+export MonteCarloParameters, MonteCarloResult, run_MC_validation!, get_MC_N,
+uncertainty, relative_error, absolute_error, MC_relative_precision, save, MC_read
 
 # averaged_multipole_decomposition
 export update_monopole_approx!, sample_effective_t_matrix_archive,mode_source, renew_particle_configurations,

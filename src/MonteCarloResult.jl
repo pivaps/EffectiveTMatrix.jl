@@ -12,11 +12,25 @@
     μeff0::SVector{N,ComplexF64}
 end
 
+get_MC_N(::MonteCarloResult{N}) where N = N
+
 function MonteCarloResult(ω::Float64,sp_MC::Specie,R::Float64; basis_order=5::Int, basis_field_order=0::Int)
     N = basis_field_order+1
     a = Array{Int,1}(undef,N)
     b = Array{ComplexF64,1}(undef,N)
     return MonteCarloResult{N}(basis_order, ω, sp_MC, R, b, b, a, b, b)
+end
+
+# Relative precisions in MC computation of real(μ_n) and imag(μ_n)
+function MC_relative_precision_precomputation(MC::MonteCarloResult)
+    u = uncertainty(MC)
+    return hcat(abs.(real.(u))./abs.(real.(MC.μ)), abs.(imag.(u))./abs.(imag.(MC.μ)))
+end
+
+# Relative precisions in MC computation of μ_n - modulus of previous values
+function MC_relative_precision(MC::MonteCarloResult)
+    r = MC_relative_precision_precomputation(MC)
+    return sum(r.*r,dims=2)
 end
 
 function uncertainty(V::Vector{Float64})

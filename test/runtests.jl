@@ -1,4 +1,5 @@
 using Test, EffectiveTMatrix
+using Statistics
 
 ## define host_medium
 dimension=2;
@@ -20,13 +21,14 @@ sp_MC, sp_EF = generate_species(radius_big_cylinder,particle,ϕ,separation_ratio
 basis_order = 5;
 basis_field_order = 4;
 nb_of_configurations = 5000;
-F2 = mode_analysis(mode, ω, host_medium, sp_MC;
+Fn = mode_analysis(mode, ω, host_medium, sp_MC;
                 radius_big_cylinder=radius_big_cylinder, 
                 basis_order=basis_order, 
                 basis_field_order=basis_field_order,
                 nb_iterations=nb_of_configurations);
 
-@test abs(F2[1]) > 10*abs(F2[2])
-@test abs(F2[1]) > 10*abs(F2[3])
-@test abs(F2[1]) > 10*abs(F2[4])
-@test abs(F2[1]) > 10*abs(F2[5])
+T = mean.(Fn)
+@test abs(T[1]) > 10*abs(T[2])
+@test abs(T[1]) > 10*abs(T[3])
+@test abs(T[1]) > 10*abs(T[4])
+@test abs(T[1]) > 10*abs(T[5])

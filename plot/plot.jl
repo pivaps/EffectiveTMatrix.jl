@@ -36,7 +36,15 @@ end
         @error("mode must range between 0 and basis_field_order = $basis_field_order")
     end
     η = [1.96*MC.σ[mode+1]/sqrt(MC.nb_iterations[mode+1]) for MC in MC_vec] 
-    x_vec = x_field_apply([getproperty(MC,xproperty) for MC in MC_vec])
+    
+    
+    if xproperty == :volume_fraction
+        x_vec = [getproperty(MC,:sp_MC) for MC in MC_vec]
+        x_vec = volume_fraction.(x_vec)
+    else 
+        x_vec = x_field_apply([getproperty(MC,xproperty) for MC in MC_vec])
+    end
+
     layout := (1,2)
     
     ϕ = MC_vec[1].sp_MC.volume_fraction

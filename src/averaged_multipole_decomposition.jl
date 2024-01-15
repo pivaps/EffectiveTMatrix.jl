@@ -68,7 +68,11 @@ in [0; basis_field_order]
 function sample_effective_t_matrix!(MC_vec::Vector{MonteCarloResult{N}},host_medium::PhysicalMedium{Dim}; 
     kws...) where {N,Dim}
 
+    L = length(MC_vec)
+    l = 0
     for MC in MC_vec
+        l+=1
+        println(l,"/",L)
         sample_effective_t_matrix!(MC, host_medium; kws...)
     end
 end

@@ -79,6 +79,7 @@ where we defined the vectors $ \langle \mathbf{F} \rangle=( \langle \mathfrak F_
 First set the dimension and physics of the problem by defining the host medium:
 
 ```julia
+using EffectiveTMatrix
 # 2D acoustic problem
 dimension=2;                               
 host_medium = Acoustic(dimension; ρ=1.0, c=1.0);
@@ -149,6 +150,8 @@ region = Box([bottomleft, topright]);    # bounding box
 Finally the field is computed and plot with
 
 ```julia
+using Plots
+
 ## scattering from incident plane wave
 us_plane_wave = average_scattered_field(ω, region, plane_wave, cylinder; basis_field_order=N);
 plot(us_plane_wave, ω; field_apply=real,seriestype = :contour,c=:balance) 
@@ -179,6 +182,8 @@ Standard Monte Carlo simulations consists in solving the scattering problem seve
 First define the host medium 
 
 ```julia
+using EffectiveTMatrix
+
 ## define host_medium
 dimension=2;
 host_medium = Acoustic(dimension; ρ=1.0, c=1.0);
@@ -205,7 +210,6 @@ basis_field_order = 4; # sample Tₙ for n ∈ [0;basis_field_order]
 ## other Monte Carlo parameters
 kws_MC = Dict(
     :basis_order => 5,                       # truncation of the Foldy-Lax equation
-    :basis_field_order => basis_field_order, # sample Tₙ for n ∈ [0;basis_field_order] 
     :nb_iterations_max => 6000,              # max number of iterations
     :nb_iterations_step => 100,              # convergence criteria is checked at every steps
     :prec => 5e-2                            # precision of the Monte Carlo simulation
@@ -215,8 +219,9 @@ kws_MC = Dict(
 The result is stored in an object of type MonteCarloResult that has to be initialise. The function run_MC_validation! runs the Monte Carlo simulation. The result can simply be plot using the function plot:
 
 ```julia
-MC = MonteCarloResult(ω,sp_MC,cylinder_radius; basis_field_order=basis_field_order);
-run_MC_validation!(host_medium, MC; kws_MC...);
+MC = MonteCarloResult(ω,sp_MC,cylinder_radius; basis_field_order=basis_field_order); # initialisation
+sample_effective_t_matrix!(MC,host_medium; kws_MC...); # Monte Carlo simulations
+run_MC_validation!(host_medium, MC; kws_MC...);     # Effective Waves Method
 plot(MC)
 ```
 
@@ -236,7 +241,8 @@ Running Monte Carlo simulations on a list of parameters is very similar to the a
 ## MC loop on frequency
 Ω = collect(.1:.05:1.5);
 MC_vec = [MonteCarloResult(ω,sp_MC,cylinder_radius) for ω ∈ Ω];
-run_MC_validation!(host_medium, MC_vec; kws_MC...);
+sample_effective_t_matrix!(MC_vec,host_medium; kws_MC...); # Monte Carlo simulations
+run_MC_validation!(host_medium, MC_vec; kws_MC...);     # Effective Waves Method
 
 # plot results
 plot(MC_vec)
@@ -268,6 +274,9 @@ $$
 where $\mathrm V_n(\mathbf{kr})$ is defined by (Eq. 1). We first show an example with a radial source which is a specific modal source with $n=0$
 
 ```julia
+using EffectiveTMatrix
+using Plots
+
 dimension=2;                                       
 host_medium = Acoustic(dimension; ρ=1.0, c=1.0);   # 2D acoustic problem
 input_mode = 0;                                          # mode n=0 
@@ -278,10 +287,11 @@ To plot the source field, we need to set a frequency $\omega$, define a box wher
 
 ```julia
 ω=0.1;                                    # frequency
-M=N=20;                                   # sizes of the rectangle where to plot
+M=N=20;  
+resolution = 100                                 # sizes of the rectangle where to plot
 bottomleft = [-M;-N]; topright = [M;N];
 region = Box([bottomleft, topright]);
-plot(source,ω;bounds=region,res=100)
+plot(source,ω;bounds=region,res=resolution)
 ```
 
 <p align="center">
@@ -325,7 +335,7 @@ We can now compute the scattered field
 ```julia
 basis_order=5;
 sim = FrequencySimulation(particles_realisation,source);
-scattered_field = run(sim,region,[ω];only_scattered_waves=true,basis_order=basis_order,res=res);
+scattered_field = run(sim,region,[ω];only_scattered_waves=true,basis_order=basis_order,res=resolution);
 
 plot(scattered_field,ω; field_apply=real,seriestype = :contour,c=:balance) 
 ```
@@ -355,7 +365,8 @@ F = mode_analysis(input_mode, ω, host_medium, sp_MC;
                 basis_field_order=basis_field_order,
                 nb_iterations=1);
 
-scatter(0:basis_field_order,abs.(F),label=false,markerstrokewidth=.5,markersize=7,markershape=:dtriangle)
+abs_F = [abs(f[1]) for f in F]
+scatter(0:basis_field_order,abs_F,label=false,markerstrokewidth=.5,markersize=7,markershape=:dtriangle)
 ```
 
 <p align="center">
@@ -378,6 +389,7 @@ $$
 The averaged scattered field is computed as follows:
 
 ```julia 
+using Statistics
 x_vec, _ = points_in_shape(region;resolution=100);                            # space discretization 
 nb_of_configurations = 200;                                                   # total number of config 
 A = complex(zeros(length(x_vec),nb_of_configurations));                       # store the fields of each config
@@ -385,7 +397,7 @@ A = complex(zeros(length(x_vec),nb_of_configurations));                       # 
 for i=1:nb_of_configurations
     particles = renew_particle_configurations(sp_MC,radius_big_cylinder);     # renew config
     sim = FrequencySimulation(particles,source);
-    us = run(sim,x_vec,[ω];only_scattered_waves=true,basis_order=basis_order) # solve for specific config
+    us = run(sim,x_vec,[ω];only_scattered_waves=true,basis_order=basis_order) # solve for #specific config
     A[:,i] = mean.(us.field[:,1]) 
 end 
 mean_A  = mean(A,dims=2);
@@ -407,12 +419,13 @@ plot(mean_us,ω; field_apply=real,seriestype = :contour,c=:balance)
 The empirical average of $\langle \mathfrak{F}_n\rangle$ obtained with 200 configurations is computed by specifying nb_iterations=200 in the function mode_analysis:
 
 ```julia 
-F_average = mode_analysis(mode, ω, host_medium, sp_MC;
+F = mode_analysis(input_mode, ω, host_medium, sp_MC;
                 radius_big_cylinder=radius_big_cylinder, 
                 basis_order=basis_order, 
                 basis_field_order=basis_field_order,
                 nb_iterations=nb_of_configurations);
 
+F_average = mean.(F)
 scatter(0:basis_field_order,abs.(F_average),label=false,markerstrokewidth=.5,markersize=7,markershape=:dtriangle)
 scatter!(xlabel="n",ylabel=L"$\langle\mathfrak{F}_n\rangle$")
 scatter!(title="modes for one $(nb_of_configurations) realisations")

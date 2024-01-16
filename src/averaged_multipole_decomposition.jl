@@ -221,7 +221,8 @@ function naive_sample_effective_t_matrix(ω::Number, host_medium::PhysicalMedium
     return F
 end
 
-# In this function we analyse the mode of the average scattered field for given mode source order N
+# In this function we analyse the mode of the scattered field for given mode source order N
+# outputs all realisation, not the average.
 # This function is not optimized, it just checks the theory: all modes of <us> different from N should vanish
 function mode_analysis(input_mode::Int, ω::Number, host_medium::PhysicalMedium, sp::Specie;
     radius_big_cylinder=10.0::Float64, basis_order=3::Int, basis_field_order=0::Int,

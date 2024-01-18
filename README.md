@@ -15,7 +15,7 @@ using Pkg
 Pkg.add https://github.com/Kevish-Napal/EffectiveTMatrix.jl.git
 ```
 
-The underlying maths is briefly explained in the introduction below. More details can be found  in the paper "Effective T-matrix of a cylinder filled with a random 2D particulate", currently accepted for publication in the Proceedings A of the Royal Society.  A preprint version of this paper can be found at: https://arxiv.org/abs/2308.13338. 
+The underlying maths is briefly explained in the introduction below. More details can be found  in the paper "Effective T-matrix of a cylinder filled with a random 2D particulate", currently accepted for publication in the Proceedings A of the Royal Society.  A preprint version of this paper can be found at: https://arxiv.org/abs/2308.13338. The package relies on two other Julia packages: MultipleScattering.jl and EffectiveWaves.jl.
 
 
 <h1 style="text-align: center;">Introduction: the acoustic  particulate cylinder</h1>
@@ -62,9 +62,13 @@ $$
 where we defined the vectors $\langle \mathbf{F} \rangle=( \langle \mathfrak F_n \rangle)_n$ and $\mathbf g = (g_n)_n$.
 
 ---
-**Reference:** 
+**References:** 
 
 [[1]](http://arxiv.org/abs/2308.13338) Napal, K. K., Piva, P. S., & Gower, A. L. (2023). Effective T-matrix of a cylinder filled with a random 2 dimensional particulate. arXiv [Physics.Class-Ph]. 
+
+[[2]](git-hub.com/JuliaWaveScattering/MultipleScattering.jl) Gower, A. L. & Deakin, J. (2020). MultipleScatering.jl: A julia library for simulating, processing, and plotting multiple scattering of waves. Github.
+
+[[3]](git-hub.com/JuliaWaveScattering/EffectiveWaves.jl) Gower, A. L. (2018). EffectiveWaves.jl: A julia package to calculate ensemble averaged waves in heterogeneous materials. Github.
 
 ---
 **Purpose of this package**

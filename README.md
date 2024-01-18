@@ -15,9 +15,10 @@ using Pkg
 Pkg.add https://github.com/Kevish-Napal/EffectiveTMatrix.jl.git
 ```
 
-The maths is briefly explained below through examples. More details will be available soon in an upcoming publication. 
+The underlying maths is briefly explained in the introduction below. More details can be found  in the paper "Effective T-matrix of a cylinder filled with a random 2D particulate", currently accepted for publication in the Proceedings A of the Royal Society.  A preprint version of this paper can be found at: https://arxiv.org/abs/2308.13338. 
 
-## The acoustic  particulate cylinder
+
+<h1 style="text-align: center;">Introduction: the acoustic  particulate cylinder</h1>
 
 The propagation of waves in free space is governed by the 2D Helmholtz equation. We denote by $\mathrm V_n$ and $\mathrm U_n$ the cylindrical Bessel functions
 
@@ -30,14 +31,14 @@ $$
 
 where $k$ is the background wavenumber and  $(r,\theta)$ are the polar coordinates of $\mathbf r$, ie $\mathbf r = (r\cos \theta,r\sin\theta)$, $\mathrm J_n$ and $\mathrm H_n$ are respectively the Bessel function of order zero and the Hankel function. 
 
-We consider the scattering from a set of $J$ cylinders confined in a circular area of radius $R$. The  incident field $u_i$ can be decomposed in modes:
+We consider the scattering from a set of $J$ cylinders, referred to as particles, confined in a circular area of radius $R$. The  incident field $u_i$ can be decomposed in modes:
 
 $$
 \tag{2}
 u_i(\mathbf r) =  \sum_{n=-\infty}^{+\infty}g_n\mathrm V_n(k\mathbf r),\quad g_n\in\mathbb{C}.
 $$
 
-Then the averaged scattered field $\langle u_s\rangle$ (over all possible configurations of the $J$ cylinders confined in the disc of radius $R$) can be written
+Then the averaged scattered field $\langle u_s\rangle$ (over all possible configurations of the $J$ particles confined in the disc of radius $R$) can be written
 
 $$
 \tag{3}
@@ -58,19 +59,35 @@ $$
  \langle \mathbf{F} \rangle = \mathbf T \mathbf g
 $$
 
-where we defined the vectors $ \langle \mathbf{F} \rangle=( \langle \mathfrak F_n \rangle)_n$ and $\mathbf g = (g_n)_n$.
+where we defined the vectors $\langle \mathbf{F} \rangle=( \langle \mathfrak F_n \rangle)_n$ and $\mathbf g = (g_n)_n$.
+
+---
+**Reference:** 
+
+[[1]](http://arxiv.org/abs/2308.13338) Napal, K. K., Piva, P. S., & Gower, A. L. (2023). Effective T-matrix of a cylinder filled with a random 2 dimensional particulate. arXiv [Physics.Class-Ph]. 
 
 ---
 **Purpose of this package**
 
 <ol>
-  <li> Compute the effective T-matrix by using the Effective Waves Method </li>
+  <li> Compute the effective T-matrix by using the Effective Waves Method as described in <a href="http://arxiv.org/abs/2308.13338">[1]</a> 
   <li> Validate the result with Monte Carlo simulations</li>
 </ol>
 
-**__NOTE:__** The package currently focuses on the ensemble average of acoustic cylinders in a homogeneous host medium. The code is setup to easily integrate higher dimensions and other physics such as elastodynamics or electromagnetics. The package can also potentially take into account more complex microstructures (the two medium problem).
+**__Long term goal:__** The package currently focuses on the acoustic scattering of particles in a homogeneous host medium, confined in a cylindrical area. The code is setup to easily integrate higher dimensions and other physics such as elastodynamics or electromagnetics in the future. The package will also take into account more complex microstructures. For example, the case of particles contained in a cylinder having different properties from the host medium, known as the two medium problem.
 
 ---
+
+<h1 style="text-align: center;">Learn through examples</h1>
+
+
+Usage of the package is explained through 3 examples:
+
+<ol> 
+  <li> Example 1: compute the coefficients of the effective T-matrix and the resulting averaged scattered field from a given incident field.
+  <li> Example 2: covers the main functionality of the package. That is validation of the Effective Waves Method (fast computation of the effective T-matrix) against the Monte Carlo method (slow computation of the effective T-matrix based on averaging of simulated scattering data).
+  <li>  Example 3: attempts to clarify the theory by exhibiting the "mode to mode scattering" of the averaged cylinder.
+</ol>
 
 ## Example 1: Computation of the coefficients $\mathrm T_n$ 
 
@@ -355,7 +372,7 @@ $$
 u _ s(\mathbf{r}) =  \sum _ {n=-\infty}^{+\infty} \mathfrak{F} _ n\mathrm U _ n(k\mathbf{r}), \qquad \text{where}\quad \mathfrak{F} _ n := \sum _ {n=-\infty}^{+\infty} \sum _ {j=1}^J \mathrm{V} _ {n'-n}(-k\mathbf{r} _ i )f_{n'}^i
 $$
 
-The coefficients $\mathfrak F_n$ depend on the particles configuration, which centers are given by $\mathbf r_1,\dots,\mathbf r_J$. In the above, the coefficients $f_{n}^i$ are obtained after solving the Foldy-Lax equations. The coefficients $\mathfrak F_n$ for $n\in\[0,N \]$ N = basis_field_order, are computed as follows:
+The coefficients $\mathfrak F_n$ depend on the particles configuration, which centers are given by $\mathbf r_1,\dots,\mathbf r_J$. In the above, the coefficients $f_{n}^i$ are obtained after solving the Foldy-Lax equations. The coefficients $\mathfrak F_n$ for $n\in [0,N]$, N = basis_field_order, are computed as follows:
 
 ```julia
 basis_field_order = 4;                                    # number of modes to compute

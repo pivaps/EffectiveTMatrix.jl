@@ -1,8 +1,7 @@
 # EffectiveTMatrix.jl
 A Julia library for computing the effective T-matrix of a random particulate sphere or cylinder.
 
-[![Build status (Github Actions)](https://github.com/Kevish-Napal/EffectiveTMatrix.jl/workflows/CI/badge.svg)](https://github.com/Kevish-Napal/EffectiveTMatrix.jl/actions)
-
+[![][doi-img]][doi-url] [![][ci-img]][ci-url]
 
 ## Installation
 
@@ -504,3 +503,12 @@ The radial case corresponded to the case $n=0$, we illustrate this result again 
 </p>
 
 The coefficient $\langle\mathfrak F_n\rangle$ appearing in (10) corresponds to  $\mathrm T_n$. This quantity is computed with (7) and averaged other particles configurations. The function run_MC_validation! uses this modal scattering property to compute the coefficients of the effective T-matrix.
+
+
+
+[doi-img]: https://zenodo.org/badge/DOI/10.5281/zenodo.10529120.svg
+[doi-url]: https://doi.org/10.5281/zenodo.10529120
+
+[ci-img]: https://github.com/Kevish-Napal/EffectiveTMatrix.jl/actions/workflows/ci.yml/badge.svg
+[ci-url]: https://github.com/Kevish-Napal/EffectiveTMatrix.jl/actions/workflows/ci.yml
+

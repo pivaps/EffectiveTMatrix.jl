@@ -1,8 +1,6 @@
 # EffectiveTMatrix.jl
 A Julia library for computing the effective T-matrix of a random multi-species particulate cylinder via Monte-Carlo simulations. This Package is an adaptation of the original EffectiveTMatrix.jl, found in https://github.com/Kevish-Napal/EffectiveTMatrix.jl
 
-[![][doi-img]][doi-url] [![][ci-img]][ci-url]
-
 ## Installation
 
 [Install Julia v1.6.1 or later](https://julialang.org/downloads/) then run in the Julia REPL:
